@@ -42,7 +42,9 @@ export default function Cart({ onCartChange, onProceedToCheckout }) {
         await shoppingApi.addToCart({
           userId: cartItem.userId,
           productId: cartItem.productId,
-          quantity: delta
+          quantity: delta,
+          sizeOptionName: cartItem.sizeOptionName,
+          price: cartItem.price
         });
       }
       loadCart();
@@ -64,14 +66,21 @@ export default function Cart({ onCartChange, onProceedToCheckout }) {
 
   const cartItems = cart.map((item) => {
     const product = products.find(p => p.id === item.productId);
+    const originalPrice = product?.price || 0;
+    // Use the price from cart item (calculated by backend) instead of recalculating
+    const itemPrice = item.price || 0;
     return {
       ...item,
       product,
-      totalPrice: (product?.price || 0) * item.quantity
+      originalPrice,
+      itemPrice,
+      totalPrice: itemPrice * item.quantity
     };
   });
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const originalSubtotal = cartItems.reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
+  const totalDiscount = originalSubtotal - subtotal;
   const shipping = subtotal > 0 ? 99 : 0;
   const tax = subtotal * 0.18;
   const total = subtotal + shipping + tax;
@@ -113,6 +122,16 @@ export default function Cart({ onCartChange, onProceedToCheckout }) {
                       />
                       <div className="flex-1">
                         <p className="font-medium text-gray-800 text-lg">{item.product?.name}</p>
+                        {item.sizeOptionName && (
+                          <span className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-semibold mb-2">
+                            {item.sizeOptionName}
+                          </span>
+                        )}
+                        {item.product?.offerPercentage > 0 && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs font-bold">{item.product.offerPercentage}% OFF</span>
+                          </div>
+                        )}
                         <div className="mb-2">
                           <p className="text-sm text-gray-500">
                             {isExpanded ? item.product?.description : shortDesc}
@@ -151,7 +170,13 @@ export default function Cart({ onCartChange, onProceedToCheckout }) {
                           </button>
                         </div>
                       </div>
-                      <p className="font-semibold text-gray-800 text-lg">{formatPrice(item.totalPrice)}</p>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 mb-1">{formatPrice(item.itemPrice)} per item</p>
+                        {item.originalPrice !== item.itemPrice && (
+                          <p className="text-sm text-gray-400 line-through">{formatPrice(item.originalPrice * item.quantity)}</p>
+                        )}
+                        <p className="font-semibold text-gray-800 text-lg">{formatPrice(item.totalPrice)}</p>
+                      </div>
                     </div>
                     );
                   })}
@@ -164,6 +189,18 @@ export default function Cart({ onCartChange, onProceedToCheckout }) {
               <div className="bg-blue-50 rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Order Summary</h2>
                 <div className="space-y-2">
+                  {totalDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="text-gray-600">Original Subtotal</span>
+                      <span className="font-medium line-through">{formatPrice(originalSubtotal)}</span>
+                    </div>
+                  )}
+                  {totalDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="text-gray-600">You Save</span>
+                      <span className="font-bold">-{formatPrice(totalDiscount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
                     <span className="font-medium">{formatPrice(subtotal)}</span>

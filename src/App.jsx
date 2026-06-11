@@ -172,11 +172,43 @@ function App() {
                 {isAdmin && (
                   <Link to="/admin" className="text-gray-700 hover:text-blue-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>Admin</Link>
                 )}
-                {isLoggedIn ? (
-                  <button onClick={handleLogout} className="text-gray-700 hover:text-blue-600 transition-colors text-left">Logout</button>
-                ) : (
-                  <Link to="/login" className="text-gray-700 hover:text-blue-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>Login</Link>
-                )}
+                <div className="flex items-center space-x-4 pt-2 border-t">
+                  <button
+                    onClick={() => {
+                      setShowCartModal(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  >
+                    <ShoppingCart size={24} />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                  {isLoggedIn ? (
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors"
+                    >
+                      <LogOut size={20} />
+                      <span>Logout</span>
+                    </button>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <User size={20} />
+                      <span>Login</span>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           )}
