@@ -3,7 +3,7 @@ import { Plus, Filter, MapPin, MessageCircle, Phone, Search, Eye, Calendar, X, S
 import { advertisingApi } from '../services/api';
 import SubcategoryFilter from './SubcategoryFilter';
 
-export default function Advertising() {
+export default function Advertising({ userRole }) {
   const [ads, setAds] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -31,7 +31,6 @@ export default function Advertising() {
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || 'user');
   const [newAd, setNewAd] = useState({
     title: '',
     description: '',
@@ -349,7 +348,7 @@ export default function Advertising() {
             <h1 className="text-4xl font-bold text-gray-800">India Classifieds</h1>
             <p className="text-gray-600 mt-1">Buy & sell everything from jobs to real estate in your local area</p>
           </div>
-          {userRole === 'advertiser' && (
+          {(userRole === 'Advertiser' || userRole === 'Admin') && (
             <button
               onClick={() => setShowPostAd(true)}
               className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all flex items-center shadow-lg"

@@ -41,7 +41,7 @@ export default function Checkout({ onClose, onOrderSuccess }) {
     cardName: '',
     expiryDate: '',
     cvv: '',
-    paymentMethod: 'credit-card'
+    paymentMethod: 'cod'
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState({});
@@ -75,6 +75,10 @@ export default function Checkout({ onClose, onOrderSuccess }) {
       if (userId) {
         const response = await shoppingApi.getCart(userId);
         setCart(response.data);
+      } else {
+        // Load guest cart from localStorage
+        const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+        setCart(guestCart);
       }
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -110,10 +114,13 @@ export default function Checkout({ onClose, onOrderSuccess }) {
 
   const cartItems = cart.map((item) => {
     const product = products.find(p => p.id === item.productId);
+    // Use the price from cart item (already includes color/size adjustments) instead of base product price
+    const itemPrice = item.price || 0;
     return {
       ...item,
       product,
-      totalPrice: (product?.price || 0) * item.quantity
+      itemPrice,
+      totalPrice: itemPrice * item.quantity
     };
   });
 
@@ -160,7 +167,8 @@ export default function Checkout({ onClose, onOrderSuccess }) {
   };
 
   const validatePayment = () => {
-    if (paymentInfo.paymentMethod === 'paypal') return true;
+    // COD and WhatsApp don't require additional validation
+    if (paymentInfo.paymentMethod === 'cod' || paymentInfo.paymentMethod === 'whatsapp') return true;
     const newErrors = {};
     if (!paymentInfo.cardNumber.trim()) newErrors.cardNumber = 'Card number is required';
     else if (!/^\d{16}$/.test(paymentInfo.cardNumber.replace(/\D/g, ''))) newErrors.cardNumber = 'Invalid card number';
@@ -216,13 +224,15 @@ export default function Checkout({ onClose, onOrderSuccess }) {
           productId: item.productId,
           productName: item.product?.name || 'Product',
           quantity: item.quantity,
-          price: item.product?.price || 0
+          price: item.itemPrice || 0,
+          sizeOptionName: item.sizeOptionName,
+          colorVariantName: item.colorVariantName
         })),
         total,
         status: 'Confirmed',
         shippingAddress: `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.state} ${shippingInfo.zipCode}`,
         billingAddress: `${finalBillingInfo.address}, ${finalBillingInfo.city}, ${finalBillingInfo.state} ${finalBillingInfo.zipCode}`,
-        paymentMethod: paymentInfo.paymentMethod === 'credit-card' ? 'Credit Card' : 'PayPal'
+        paymentMethod: paymentInfo.paymentMethod === 'cod' ? 'Cash on Delivery' : paymentInfo.paymentMethod === 'whatsapp' ? 'WhatsApp Payment' : paymentInfo.paymentMethod
       };
 
       const response = await shoppingApi.createOrder(orderData);
@@ -262,19 +272,19 @@ export default function Checkout({ onClose, onOrderSuccess }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-6 border-b flex-shrink-0 relative z-20">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="bg-gray-100 p-4 sm:p-6 border-b border-gray-200 flex-shrink-0 relative z-20">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">Checkout</h2>
-            <button onClick={onClose} className="relative z-30 text-gray-500 hover:text-gray-700 text-2xl font-bold px-2 py-1 hover:bg-gray-100 rounded transition-colors">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Checkout</h2>
+            <button onClick={onClose} className="relative z-30 text-gray-500 hover:text-gray-700 text-xl sm:text-2xl font-bold px-2 py-1 hover:bg-gray-200 rounded-lg transition-colors">
               ✕
             </button>
           </div>
           <StepIndicator />
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1 relative z-10">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative z-10 bg-white">
           {currentStep === 0 && <ShippingStep shippingInfo={shippingInfo} setShippingInfo={setShippingInfo} errors={errors} setErrors={setErrors} states={states} districts={districts} loadDistricts={loadDistricts} />}
           {currentStep === 1 && <BillingStep billingInfo={billingInfo} setBillingInfo={setBillingInfo} errors={errors} setErrors={setErrors} states={states} districts={districts} loadDistricts={loadDistricts} shippingInfo={shippingInfo} />}
           {currentStep === 2 && <PaymentStep paymentInfo={paymentInfo} setPaymentInfo={setPaymentInfo} errors={errors} setErrors={setErrors} />}
@@ -283,11 +293,11 @@ export default function Checkout({ onClose, onOrderSuccess }) {
         </div>
 
         {!orderPlaced && (
-          <div className="p-6 border-t flex-shrink-0 flex justify-between">
+          <div className="p-4 sm:p-6 border-t border-gray-200 bg-white flex-shrink-0 flex flex-col sm:flex-row justify-between gap-3">
             <button
               onClick={handleBack}
               disabled={currentStep === 0}
-              className="flex items-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ArrowLeft size={20} />
               Back
@@ -296,14 +306,14 @@ export default function Checkout({ onClose, onOrderSuccess }) {
               <button
                 onClick={handleSubmitOrder}
                 disabled={loading}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Processing...' : 'Place Order'}
               </button>
             ) : currentStep < steps.length - 1 ? (
               <button
                 onClick={handleNext}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
               >
                 Next
                 <ArrowRight size={20} />

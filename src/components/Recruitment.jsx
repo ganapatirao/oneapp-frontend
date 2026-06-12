@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, MapPin, Briefcase, DollarSign, Building2, Clock, Bookmark, Share2, X, Filter, ChevronDown, Star, Users, Calendar, ArrowRight, Send, Plus } from 'lucide-react';
 import { recruitmentApi } from '../services/api';
 
-export default function Recruitment() {
+export default function Recruitment({ userRole }) {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -423,13 +423,15 @@ export default function Recruitment() {
               <h2 className="text-2xl font-bold text-gray-800">
                 {filteredJobs.length} Jobs Found
               </h2>
-              <button
-                onClick={() => setShowPostJob(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center shadow-lg hover:shadow-xl"
-              >
-                <Plus size={20} className="mr-2" />
-                Post a Job
-              </button>
+              {(userRole === 'Recruiter' || userRole === 'Admin') && (
+                <button
+                  onClick={() => setShowPostJob(true)}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center shadow-lg hover:shadow-xl"
+                >
+                  <Plus size={20} className="mr-2" />
+                  Post a Job
+                </button>
+              )}
             </div>
 
             <div className="space-y-4">

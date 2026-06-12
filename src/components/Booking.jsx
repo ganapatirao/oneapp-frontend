@@ -3,7 +3,7 @@ import { Calendar, Plane, Film, Plus, MapPin, Clock, DollarSign } from 'lucide-r
 import { bookingApi } from '../services/api';
 import { indiaLocations } from '../data/indiaLocations';
 
-export default function Booking() {
+export default function Booking({ userRole }) {
   const [transports, setTransports] = useState([]);
   const [packages, setPackages] = useState([]);
   const [movies, setMovies] = useState([]);

@@ -24,6 +24,8 @@ export default function ShoppingAdmin() {
   const [productAdditionalPreviews, setProductAdditionalPreviews] = useState([]);
   const [validationSettings, setValidationSettings] = useState({});
   const [sizeOptions, setSizeOptions] = useState([]);
+  const [colorVariants, setColorVariants] = useState([]);
+  const [selectedColorVariant, setSelectedColorVariant] = useState(0);
   
   // Order state
   const [orderFilter, setOrderFilter] = useState({ status: '', search: '', dateFrom: '', dateTo: '' });
@@ -58,6 +60,48 @@ export default function ShoppingAdmin() {
     const updated = [...sizeOptions];
     updated[index] = { ...updated[index], [field]: value };
     setSizeOptions(updated);
+  };
+
+  const addColorVariant = () => {
+    setColorVariants([...colorVariants, { name: '', hexCode: '', imageUrl: '', imageUrls: [], priceAdjustment: 0, sizeOptions: [], stock: 0, isDefault: colorVariants.length === 0 }]);
+  };
+
+  const removeColorVariant = (index) => {
+    const updated = colorVariants.filter((_, i) => i !== index);
+    setColorVariants(updated);
+    if (selectedColorVariant >= updated.length) {
+      setSelectedColorVariant(Math.max(0, updated.length - 1));
+    }
+  };
+
+  const updateColorVariant = (index, field, value) => {
+    const updated = [...colorVariants];
+    updated[index] = { ...updated[index], [field]: value };
+    setColorVariants(updated);
+  };
+
+  const updateColorVariantSizeOption = (colorIndex, sizeIndex, field, value) => {
+    const updated = [...colorVariants];
+    if (!updated[colorIndex].sizeOptions) {
+      updated[colorIndex].sizeOptions = [];
+    }
+    updated[colorIndex].sizeOptions[sizeIndex] = { ...updated[colorIndex].sizeOptions[sizeIndex], [field]: value };
+    setColorVariants(updated);
+  };
+
+  const addColorVariantSizeOption = (colorIndex) => {
+    const updated = [...colorVariants];
+    if (!updated[colorIndex].sizeOptions) {
+      updated[colorIndex].sizeOptions = [];
+    }
+    updated[colorIndex].sizeOptions = [...updated[colorIndex].sizeOptions, { name: '', priceAdjustment: 0, stock: 0 }];
+    setColorVariants(updated);
+  };
+
+  const removeColorVariantSizeOption = (colorIndex, sizeIndex) => {
+    const updated = [...colorVariants];
+    updated[colorIndex].sizeOptions = updated[colorIndex].sizeOptions.filter((_, i) => i !== sizeIndex);
+    setColorVariants(updated);
   };
 
   const validateField = (fieldName, value) => {
@@ -355,6 +399,8 @@ export default function ShoppingAdmin() {
     setSelectedCategory('');
     setDefaultDisplaySequence(0);
     setSizeOptions([]);
+    setColorVariants([]);
+    setSelectedColorVariant(0);
   };
 
   const handleEditProduct = async (product) => {
@@ -366,6 +412,8 @@ export default function ShoppingAdmin() {
     setSelectedCategory(product.categoryName || '');
     setDefaultDisplaySequence(product.displaySequence || 0);
     setSizeOptions(product.sizeOptions || []);
+    setColorVariants(product.colorVariants || []);
+    setSelectedColorVariant(0);
   };
 
   const handleDeleteProductClick = (product) => {
@@ -1037,7 +1085,8 @@ export default function ShoppingAdmin() {
                     status: e.target.status.value,
                     categoryName: categoryName,
                     displaySequence: parseInt(e.target.displaySequence.value) || 0,
-                    sizeOptions: sizeOptions
+                    sizeOptions: sizeOptions,
+                    colorVariants: colorVariants
                   });
                   setProductPrimaryPreview('');
                   setProductAdditionalPreviews([]);
@@ -1359,6 +1408,210 @@ export default function ShoppingAdmin() {
                           <Plus size={16} />
                           Add Size/Weight Option
                         </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        Color Variants
+                      </label>
+                      <div className="space-y-4">
+                        {colorVariants.length === 0 ? (
+                          <button
+                            type="button"
+                            onClick={addColorVariant}
+                            className="w-full text-green-600 text-sm font-bold hover:text-green-800 flex items-center justify-center gap-1 py-3 border-2 border-dashed border-green-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all"
+                          >
+                            <Plus size={16} />
+                            Add First Color Variant
+                          </button>
+                        ) : (
+                          <>
+                            <div className="flex gap-2 overflow-x-auto pb-2">
+                              {colorVariants.map((variant, index) => (
+                                <button
+                                  key={index}
+                                  type="button"
+                                  onClick={() => setSelectedColorVariant(index)}
+                                  className={`flex-shrink-0 px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
+                                    selectedColorVariant === index
+                                      ? 'border-green-500 bg-green-50'
+                                      : 'border-gray-200 hover:border-green-300'
+                                  }`}
+                                >
+                                  {variant.hexCode && (
+                                    <div
+                                      className="w-5 h-5 rounded-full border border-gray-300"
+                                      style={{ backgroundColor: variant.hexCode }}
+                                    />
+                                  )}
+                                  <span className="text-sm font-medium">{variant.name || `Color ${index + 1}`}</span>
+                                  {colorVariants.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeColorVariant(index);
+                                      }}
+                                      className="text-red-500 hover:text-red-700 ml-1"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={addColorVariant}
+                                className="flex-shrink-0 px-4 py-2 rounded-lg border-2 border-dashed border-green-300 text-green-600 hover:border-green-500 hover:bg-green-50 transition-all flex items-center gap-1"
+                              >
+                                <Plus size={16} />
+                                Add Color
+                              </button>
+                            </div>
+                            {colorVariants[selectedColorVariant] && (
+                              <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Color Name *</label>
+                                    <input
+                                      type="text"
+                                      value={colorVariants[selectedColorVariant].name}
+                                      onChange={(e) => updateColorVariant(selectedColorVariant, 'name', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                      placeholder="e.g., Black, Red, Blue"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Hex Code</label>
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="color"
+                                        value={colorVariants[selectedColorVariant].hexCode || '#000000'}
+                                        onChange={(e) => updateColorVariant(selectedColorVariant, 'hexCode', e.target.value)}
+                                        className="w-12 h-10 rounded cursor-pointer"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={colorVariants[selectedColorVariant].hexCode || ''}
+                                        onChange={(e) => updateColorVariant(selectedColorVariant, 'hexCode', e.target.value)}
+                                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                        placeholder="#000000"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Price Adjustment</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={colorVariants[selectedColorVariant].priceAdjustment}
+                                      onChange={(e) => updateColorVariant(selectedColorVariant, 'priceAdjustment', parseFloat(e.target.value) || 0)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Stock</label>
+                                    <input
+                                      type="number"
+                                      value={colorVariants[selectedColorVariant].stock}
+                                      onChange={(e) => updateColorVariant(selectedColorVariant, 'stock', parseInt(e.target.value) || 0)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2 pt-5">
+                                    <input
+                                      type="checkbox"
+                                      id={`isDefault-${selectedColorVariant}`}
+                                      checked={colorVariants[selectedColorVariant].isDefault}
+                                      onChange={(e) => {
+                                        const updated = colorVariants.map((v, i) => ({
+                                          ...v,
+                                          isDefault: i === selectedColorVariant ? e.target.checked : false
+                                        }));
+                                        setColorVariants(updated);
+                                      }}
+                                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                                    />
+                                    <label htmlFor={`isDefault-${selectedColorVariant}`} className="text-xs font-semibold text-gray-600">Default Color</label>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Primary Image *</label>
+                                  <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-green-400 hover:bg-green-50 transition-all cursor-pointer" onClick={() => document.getElementById(`colorImage-${selectedColorVariant}`).click()}>
+                                    <input
+                                      id={`colorImage-${selectedColorVariant}`}
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={async (e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                          const dataUrl = await fileToDataUrl(file);
+                                          updateColorVariant(selectedColorVariant, 'imageUrl', dataUrl);
+                                        }
+                                      }}
+                                      className="hidden"
+                                    />
+                                    {colorVariants[selectedColorVariant].imageUrl ? (
+                                      <img src={colorVariants[selectedColorVariant].imageUrl} alt="Preview" className="max-h-32 mx-auto rounded" />
+                                    ) : (
+                                      <p className="text-xs text-gray-500">Click to upload image</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Size Options for this Color</label>
+                                  <div className="space-y-2">
+                                    {(colorVariants[selectedColorVariant].sizeOptions || []).map((sizeOption, sizeIndex) => (
+                                      <div key={sizeIndex} className="flex flex-col sm:flex-row gap-2 items-center">
+                                        <input
+                                          type="text"
+                                          placeholder="Size"
+                                          value={sizeOption.name}
+                                          onChange={(e) => updateColorVariantSizeOption(selectedColorVariant, sizeIndex, 'name', e.target.value)}
+                                          className="flex-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                        />
+                                        <input
+                                          type="number"
+                                          placeholder="Price Adj."
+                                          value={sizeOption.priceAdjustment}
+                                          onChange={(e) => updateColorVariantSizeOption(selectedColorVariant, sizeIndex, 'priceAdjustment', parseFloat(e.target.value) || 0)}
+                                          className="w-full sm:w-24 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                        />
+                                        <input
+                                          type="number"
+                                          placeholder="Stock"
+                                          value={sizeOption.stock}
+                                          onChange={(e) => updateColorVariantSizeOption(selectedColorVariant, sizeIndex, 'stock', parseInt(e.target.value) || 0)}
+                                          className="w-full sm:w-20 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => removeColorVariantSizeOption(selectedColorVariant, sizeIndex)}
+                                          className="text-red-600 hover:text-red-800 px-2 text-sm"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    ))}
+                                    <button
+                                      type="button"
+                                      onClick={() => addColorVariantSizeOption(selectedColorVariant)}
+                                      className="text-green-600 text-xs font-bold hover:text-green-800 flex items-center gap-1"
+                                    >
+                                      <Plus size={12} />
+                                      Add Size Option
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                     <div>
