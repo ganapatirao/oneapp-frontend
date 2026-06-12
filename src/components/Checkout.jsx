@@ -47,11 +47,14 @@ export default function Checkout({ onClose, onOrderSuccess }) {
   const [errors, setErrors] = useState({});
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
+  const [config, setConfig] = useState({ shippingCost: 99, taxRate: 0.18 });
+  const [orderError, setOrderError] = useState(null);
 
   useEffect(() => {
     loadCart();
     loadProducts();
     loadStates();
+    loadConfig();
   }, []);
 
   useEffect(() => {
@@ -112,6 +115,15 @@ export default function Checkout({ onClose, onOrderSuccess }) {
     }
   };
 
+  const loadConfig = async () => {
+    try {
+      const response = await shoppingApi.getConfig();
+      setConfig(response.data);
+    } catch (error) {
+      console.error('Error loading config:', error);
+    }
+  };
+
   const cartItems = cart.map((item) => {
     const product = products.find(p => p.id === item.productId);
     // Use the price from cart item (already includes color/size adjustments) instead of base product price
@@ -124,10 +136,10 @@ export default function Checkout({ onClose, onOrderSuccess }) {
     };
   });
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const shipping = subtotal > 0 ? 99 : 0;
-  const tax = subtotal * 0.18;
-  const total = subtotal + shipping + tax;
+  const subtotal = Math.ceil(cartItems.reduce((sum, item) => sum + item.totalPrice, 0));
+  const shipping = subtotal > 0 ? config.shippingCost : 0;
+  const tax = Math.ceil(subtotal * config.taxRate);
+  const total = Math.ceil(subtotal + shipping + tax);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
@@ -224,7 +236,7 @@ export default function Checkout({ onClose, onOrderSuccess }) {
           productId: item.productId,
           productName: item.product?.name || 'Product',
           quantity: item.quantity,
-          price: item.itemPrice || 0,
+          price: Math.ceil(item.itemPrice || 0),
           sizeOptionName: item.sizeOptionName,
           colorVariantName: item.colorVariantName
         })),
@@ -239,9 +251,11 @@ export default function Checkout({ onClose, onOrderSuccess }) {
       setOrderId(response.data.order?.id || response.data.id);
       setOrderPlaced(true);
       setCurrentStep(steps.length - 1);
+      setOrderError(null);
     } catch (error) {
       console.error('Error creating order:', error);
-      alert('Error creating order. Please try again.');
+      const errorMessage = error.response?.data?.message || error.message || 'Error creating order. Please try again.';
+      setOrderError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -285,6 +299,18 @@ export default function Checkout({ onClose, onOrderSuccess }) {
         </div>
 
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative z-10 bg-white">
+          {orderError && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 className="text-red-800 font-bold mb-2">Order Error</h3>
+              <p className="text-red-600">{orderError}</p>
+              <button
+                onClick={() => setOrderError(null)}
+                className="mt-2 text-red-800 underline hover:text-red-900"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           {currentStep === 0 && <ShippingStep shippingInfo={shippingInfo} setShippingInfo={setShippingInfo} errors={errors} setErrors={setErrors} states={states} districts={districts} loadDistricts={loadDistricts} />}
           {currentStep === 1 && <BillingStep billingInfo={billingInfo} setBillingInfo={setBillingInfo} errors={errors} setErrors={setErrors} states={states} districts={districts} loadDistricts={loadDistricts} shippingInfo={shippingInfo} />}
           {currentStep === 2 && <PaymentStep paymentInfo={paymentInfo} setPaymentInfo={setPaymentInfo} errors={errors} setErrors={setErrors} />}

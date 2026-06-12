@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ShoppingBag, Briefcase, Calendar, Film, Package, DollarSign, TrendingUp, Plus, Trash2, Edit, Power, PowerOff, X, RefreshCw } from 'lucide-react';
+import { Users, ShoppingBag, Briefcase, Calendar, Film, Package, DollarSign, TrendingUp, Plus, Trash2, Edit, Power, PowerOff, X, RefreshCw, MapPin } from 'lucide-react';
 import { adminApi, shoppingApi, advertisingApi, recruitmentApi, bookingApi } from '../../services/api';
 import ShoppingAdmin from './ShoppingAdmin';
 import SubcategoryFilter from '../SubcategoryFilter';
@@ -10,6 +10,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboard, setDashboard] = useState(null);
   const [allOrders, setAllOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [users, setUsers] = useState([]);
   const [ads, setAds] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -244,6 +246,19 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error updating order status:', error);
     }
+  };
+
+  const handleViewOrderDetails = (order) => {
+    setSelectedOrder(order);
+    setShowOrderDetails(true);
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(price);
   };
 
   // Ad handlers
@@ -707,43 +722,169 @@ export default function AdminDashboard() {
                 Seed Database Data
               </button>
             </div>
+            
+            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div 
+                onClick={() => setActiveTab('users')}
+                className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-800">{dashboard.totalUsers}</p>
+                    <p className="text-blue-100 text-sm font-medium mb-1">Total Users</p>
+                    <p className="text-4xl font-bold">{dashboard.totalUsers}</p>
+                    <p className="text-blue-200 text-xs mt-2">Active accounts</p>
                   </div>
-                  <Users size={32} className="text-blue-600" />
+                  <div className="bg-white/20 rounded-2xl p-3">
+                    <Users size={32} className="text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div 
+                onClick={() => setActiveTab('shopping')}
+                className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Total Products</p>
-                    <p className="text-3xl font-bold text-gray-800">{dashboard.totalProducts}</p>
+                    <p className="text-green-100 text-sm font-medium mb-1">Total Products</p>
+                    <p className="text-4xl font-bold">{dashboard.totalProducts}</p>
+                    <p className="text-green-200 text-xs mt-2">Available items</p>
                   </div>
-                  <ShoppingBag size={32} className="text-green-600" />
+                  <div className="bg-white/20 rounded-2xl p-3">
+                    <ShoppingBag size={32} className="text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div 
+                onClick={() => setActiveTab('shopping')}
+                className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Total Orders</p>
-                    <p className="text-3xl font-bold text-gray-800">{dashboard.totalOrders}</p>
+                    <p className="text-purple-100 text-sm font-medium mb-1">Total Orders</p>
+                    <p className="text-4xl font-bold">{dashboard.totalOrders}</p>
+                    <p className="text-purple-200 text-xs mt-2">All time orders</p>
                   </div>
-                  <TrendingUp size={32} className="text-purple-600" />
+                  <div className="bg-white/20 rounded-2xl p-3">
+                    <TrendingUp size={32} className="text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Total Revenue</p>
-                    <p className="text-3xl font-bold text-gray-800">${dashboard.totalRevenue.toFixed(2)}</p>
+                    <p className="text-amber-100 text-sm font-medium mb-1">Total Revenue</p>
+                    <p className="text-4xl font-bold">{formatPrice(dashboard.totalRevenue)}</p>
+                    <p className="text-amber-200 text-xs mt-2">Total earnings</p>
                   </div>
-                  <DollarSign size={32} className="text-yellow-600" />
+                  <div className="bg-white/20 rounded-2xl p-3">
+                    <TrendingUp size={32} className="text-white" />
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Additional Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div 
+                onClick={() => setActiveTab('jobs')}
+                className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 cursor-pointer hover:shadow-xl transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="bg-blue-100 rounded-xl p-3">
+                    <Briefcase size={24} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">Total Jobs</p>
+                    <p className="text-2xl font-bold text-gray-800">{dashboard.totalJobs || 0}</p>
+                  </div>
+                </div>
+              </div>
+              <div 
+                onClick={() => setActiveTab('ads')}
+                className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 cursor-pointer hover:shadow-xl transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="bg-green-100 rounded-xl p-3">
+                    <Film size={24} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">Total Ads</p>
+                    <p className="text-2xl font-bold text-gray-800">{dashboard.totalAds || 0}</p>
+                  </div>
+                </div>
+              </div>
+              <div 
+                onClick={() => setActiveTab('transport')}
+                className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 cursor-pointer hover:shadow-xl transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="bg-purple-100 rounded-xl p-3">
+                    <Calendar size={24} className="text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">Total Bookings</p>
+                    <p className="text-2xl font-bold text-gray-800">{dashboard.totalBookings || 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Orders ({allOrders.length})</h2>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Order ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {allOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-800">{order.id.substring(0, 8)}...</td>
+                      <td className="px-4 py-3 text-sm text-gray-800">{order.userName || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-800">{formatPrice(order.total)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                          order.status === 'Confirmed' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
+                          order.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <button
+                          onClick={() => handleViewOrderDetails(order)}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -1314,6 +1455,200 @@ export default function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Order Details Modal */}
+        {showOrderDetails && selectedOrder && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-6 text-white">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-1">Order Details</h3>
+                    <p className="text-blue-100 text-sm">Order ID: {selectedOrder.id.substring(0, 12)}...</p>
+                  </div>
+                  <button
+                    onClick={() => setShowOrderDetails(false)}
+                    className="bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors"
+                  >
+                    <X size={24} className="text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Order Info Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-600 rounded-lg p-2">
+                        <Calendar size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Order Date</p>
+                        <p className="font-semibold text-gray-800 text-sm">
+                          {new Date(selectedOrder.createdAt).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-600 rounded-lg p-2">
+                        <Users size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Customer</p>
+                        <p className="font-semibold text-gray-800 text-sm">{selectedOrder.userName || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-purple-600 rounded-lg p-2">
+                        <DollarSign size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Total Amount</p>
+                        <p className="font-bold text-gray-800 text-sm">{formatPrice(selectedOrder.total)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                    <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                      <Package size={18} className="text-blue-600" />
+                      Order Items
+                    </h4>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Variant</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Qty</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {selectedOrder.items?.map((item, index) => (
+                          <tr key={index} className="hover:bg-blue-50 transition-colors">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{item.productName}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {item.sizeOptionName && <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs mr-2">Size: {item.sizeOptionName}</span>}
+                              {item.colorVariantName && <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Color: {item.colorVariantName}</span>}
+                              {!item.sizeOptionName && !item.colorVariantName && <span className="text-gray-400">-</span>}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right font-medium text-gray-800">{formatPrice(item.price)}</td>
+                            <td className="px-4 py-3 text-sm text-center text-gray-800">{item.quantity}</td>
+                            <td className="px-4 py-3 text-sm text-right font-bold text-blue-600">{formatPrice(item.price * item.quantity)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Order Summary */}
+                <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200">
+                  <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <TrendingUp size={18} className="text-green-600" />
+                    Order Summary
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Subtotal</span>
+                      <span className="font-medium text-gray-800">{formatPrice(selectedOrder.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Shipping</span>
+                      <span className="font-medium text-gray-800">{formatPrice(99)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Tax (18%)</span>
+                      <span className="font-medium text-gray-800">{formatPrice((selectedOrder.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0) * 0.18)}</span>
+                    </div>
+                    <div className="border-t-2 border-gray-300 pt-3 mt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-800">Total</span>
+                        <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">{formatPrice(selectedOrder.total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Addresses */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <div className="bg-blue-100 rounded-lg p-1.5">
+                        <MapPin size={16} className="text-blue-600" />
+                      </div>
+                      Shipping Address
+                    </h4>
+                    <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{selectedOrder.shippingAddress}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <div className="bg-green-100 rounded-lg p-1.5">
+                        <MapPin size={16} className="text-green-600" />
+                      </div>
+                      Billing Address
+                    </h4>
+                    <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{selectedOrder.billingAddress}</p>
+                  </div>
+                </div>
+
+                {/* Payment Method */}
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <div className="bg-purple-100 rounded-lg p-1.5">
+                      <DollarSign size={16} className="text-purple-600" />
+                    </div>
+                    Payment Method
+                  </h4>
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 inline-block">{selectedOrder.paymentMethod}</p>
+                </div>
+
+                {/* Status Update */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
+                  <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <RefreshCw size={18} className="text-blue-600" />
+                    Update Order Status
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {['Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          handleUpdateOrderStatus(selectedOrder.id, status);
+                          setShowOrderDetails(false);
+                        }}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 ${
+                          selectedOrder.status === status
+                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-500 hover:text-blue-600'
+                        }`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

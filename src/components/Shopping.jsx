@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { Plus, Filter, Star, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -14,7 +14,6 @@ export default function Shopping({ onCartChange }) {
 
   const [cart, setCart] = useState([]);
 
-  const [orders, setOrders] = useState([]);
 
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -22,7 +21,6 @@ export default function Shopping({ onCartChange }) {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
-  const [expandedOrders, setExpandedOrders] = useState({});
   const [expandedHighlights, setExpandedHighlights] = useState({});
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
@@ -32,16 +30,15 @@ export default function Shopping({ onCartChange }) {
   const [addToCartError, setAddToCartError] = useState('');
   const [hasCheckedSearchProduct, setHasCheckedSearchProduct] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
 
 
   useEffect(() => {
-
+    console.log('Shopping component mounted');
     loadCategories();
     loadProducts();
     loadCart();
-    loadOrders();
-
   }, []);
 
 
@@ -50,10 +47,17 @@ export default function Shopping({ onCartChange }) {
 
     try {
 
+      console.log('Loading products...');
       const response = await shoppingApi.getProducts();
+      console.log('Products response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data is array:', Array.isArray(response.data));
 
       // Backend already sorts by category sequence then product sequence
       const sortedProducts = response.data.filter(p => p.status === 'Active');
+      console.log('Filtered products:', sortedProducts);
+      console.log('Products count:', sortedProducts.length);
 
       setProducts(sortedProducts);
       setLoading(false);
@@ -61,6 +65,9 @@ export default function Shopping({ onCartChange }) {
     } catch (error) {
 
       console.error('Error loading products:', error);
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response);
+      setError(error.message || 'Failed to load products');
       setLoading(false);
 
     }
@@ -73,7 +80,9 @@ export default function Shopping({ onCartChange }) {
 
     try {
 
+      console.log('Loading categories...');
       const response = await shoppingApi.getCategories();
+      console.log('Categories response:', response.data);
 
       // Backend already sorts by displaySequence, use as-is
       setCategories(response.data);
@@ -116,27 +125,6 @@ export default function Shopping({ onCartChange }) {
 
 
 
-  const loadOrders = async () => {
-
-    try {
-
-      const userId = localStorage.getItem('userId');
-
-      if (userId) {
-
-        const response = await shoppingApi.getUserOrders(userId);
-
-        setOrders(response.data);
-
-      }
-
-    } catch (error) {
-
-      console.error('Error loading orders:', error);
-
-    }
-
-  };
 
 
 
@@ -144,48 +132,144 @@ export default function Shopping({ onCartChange }) {
 
     try {
 
+      console.log('Adding to cart - product:', product);
+      console.log('Selected color:', selectedColor);
+      console.log('Selected size:', selectedSize);
+
       const userId = localStorage.getItem('userId');
 
-      // Use default variant if no color selected
-      const defaultVariant = product.colorVariants && product.colorVariants.length > 0
-        ? product.colorVariants[product.colorVariants.findIndex(v => v.isDefault) || 0]
-        : null;
-      const activeVariant = selectedColor !== null && product.colorVariants
-        ? product.colorVariants[selectedColor]
-        : defaultVariant;
-      const sizeOptionsToUse = activeVariant && activeVariant.sizeOptions && activeVariant.sizeOptions.length > 0
-        ? activeVariant.sizeOptions
-        : product.sizeOptions;
+      // Determine which variant and size options to use based on selection
+      let activeVariant = null;
+      let sizeOptionsToUse = null;
 
-      // Use default size if no size selected
-      const defaultSizeIndex = sizeOptionsToUse && sizeOptionsToUse.length > 0
-        ? sizeOptionsToUse.findIndex(s => s.isDefault) || 0
-        : null;
-      const activeSizeIndex = selectedSize !== null ? selectedSize : defaultSizeIndex;
+      if (selectedColor !== null && product.colorVariants && product.colorVariants[selectedColor]) {
+        // Color explicitly selected - use that color's size options
+        activeVariant = product.colorVariants[selectedColor];
+        // If color has size options, use those; otherwise fall back to product size options
+        sizeOptionsToUse = activeVariant.sizeOptions && activeVariant.sizeOptions.length > 0
+          ? activeVariant.sizeOptions
+          : (product.sizeOptions && product.sizeOptions.length > 0 ? product.sizeOptions : null);
+      } else {
+        // No color selected - use product-level size options
+        activeVariant = null;
+        sizeOptionsToUse = product.sizeOptions && product.sizeOptions.length > 0
+          ? product.sizeOptions
+          : null;
+      }
+
+      // Validate that selected size index is valid for current size options array
+      let activeSizeIndex = selectedSize;
+      if (activeSizeIndex !== null && sizeOptionsToUse && (activeSizeIndex >= sizeOptionsToUse.length || activeSizeIndex < 0)) {
+        console.log('Selected size index is invalid for current size options, resetting to null');
+        activeSizeIndex = null;
+      }
+
+      console.log('=== Price Calculation Debug ===');
+      console.log('Product base price:', product.price);
+      console.log('Product offer %:', product.offerPercentage);
+      console.log('Selected color:', selectedColor);
+      console.log('Selected size:', selectedSize);
+      console.log('Active variant:', activeVariant);
+      console.log('Size options to use:', sizeOptionsToUse);
+      console.log('Size options length:', sizeOptionsToUse?.length);
+      console.log('Active size index (after validation):', activeSizeIndex);
+
+      // Validation: If product has both color variants and size options, require both to be selected
+      const hasColorVariants = product.colorVariants && product.colorVariants.length > 0;
+      const hasSizeOptions = product.sizeOptions && product.sizeOptions.length > 0;
+      const hasColorVariantSizeOptions = hasColorVariants && product.colorVariants.some(cv => cv.sizeOptions && cv.sizeOptions.length > 0);
+
+      if (hasColorVariants && hasSizeOptions) {
+        // Product has both color variants and size options at product level
+        if (selectedColor === null || selectedSize === null) {
+          setAddToCartError('Please select both a color and a size option');
+          return;
+        }
+      } else if (hasColorVariantSizeOptions) {
+        // Product has color variants with size options
+        if (selectedColor === null || selectedSize === null) {
+          setAddToCartError('Please select both a color and a size option');
+          return;
+        }
+      } else if (hasColorVariants) {
+        // Product has only color variants
+        if (selectedColor === null) {
+          setAddToCartError('Please select a color option');
+          return;
+        }
+      } else if (hasSizeOptions) {
+        // Product has only size options
+        if (selectedSize === null) {
+          setAddToCartError('Please select a size option');
+          return;
+        }
+      }
 
       setAddToCartError('');
 
-      // Calculate price based on color and size selection
+      // Calculate price based on color and size selection (matching backend logic exactly)
       let sizeOptionName = null;
-      let finalColorVariantName = colorVariantName || (activeVariant ? activeVariant.name : null);
+      let finalColorVariantName = null;
       let price = product.price;
 
-      // Calculate base price with offer
-      if (product.offerPercentage > 0) {
-        price = product.price - (product.price * product.offerPercentage / 100);
+      // Ceiling rounding function to avoid floating-point precision issues
+      const ceilPrice = (value) => Math.ceil(value);
+
+      // Only send color variant name if a color was explicitly selected
+      if (selectedColor !== null && activeVariant) {
+        finalColorVariantName = activeVariant.name;
+        console.log('Color variant selected:', finalColorVariantName);
       }
 
-      // Add color adjustment
-      if (activeVariant) {
-        price += activeVariant.priceAdjustment;
+      // Backend logic: First apply adjustments, then apply offer, then re-apply adjustments
+      // This matches the backend's two-step process
+
+      // Step 1: Apply adjustments to base price
+      if (finalColorVariantName && activeVariant) {
+        price += activeVariant.priceAdjustment || 0;
+        console.log('After color adjustment:', price, '(added:', activeVariant.priceAdjustment || 0, ')');
       }
 
-      if (activeSizeIndex !== null && sizeOptionsToUse && sizeOptionsToUse[activeSizeIndex]) {
+      if (activeSizeIndex !== null && activeSizeIndex >= 0 && sizeOptionsToUse && sizeOptionsToUse[activeSizeIndex]) {
         const sizeOption = sizeOptionsToUse[activeSizeIndex];
         sizeOptionName = sizeOption.name;
-        // Add size adjustment
-        price += sizeOption.priceAdjustment;
+        price += sizeOption.priceAdjustment || 0;
+        console.log('After size adjustment:', price, '(added:', sizeOption.priceAdjustment || 0, ')');
+        console.log('Size option details:', sizeOption);
+      } else {
+        console.log('Size adjustment SKIPPED - activeSizeIndex:', activeSizeIndex, 'sizeOptionsToUse:', sizeOptionsToUse);
       }
+
+      // Step 2: Apply offer percentage to base price, then re-add adjustments
+      if (product.offerPercentage > 0) {
+        const basePriceWithOffer = product.price - (product.price * product.offerPercentage / 100);
+        price = basePriceWithOffer;
+        console.log('After offer applied to base:', price, '(base:', product.price, 'offer:', product.offerPercentage + '%)');
+
+        // Re-add color adjustment
+        if (finalColorVariantName && activeVariant) {
+          price += activeVariant.priceAdjustment || 0;
+          console.log('After re-adding color adjustment:', price, '(added:', activeVariant.priceAdjustment || 0, ')');
+        }
+
+        // Re-add size adjustment
+        if (activeSizeIndex !== null && activeSizeIndex >= 0 && sizeOptionsToUse && sizeOptionsToUse[activeSizeIndex]) {
+          const sizeOption = sizeOptionsToUse[activeSizeIndex];
+          price += sizeOption.priceAdjustment || 0;
+          console.log('After re-adding size adjustment:', price, '(added:', sizeOption.priceAdjustment || 0, ')');
+        }
+      } else {
+        // No offer - adjustments already applied in Step 1
+        console.log('No offer - using price with adjustments from Step 1');
+      }
+
+      // Apply ceiling rounding to final price to avoid floating-point precision issues
+      price = ceilPrice(price);
+      console.log('Final calculated price (after ceiling):', price);
+      console.log('Final color variant name:', finalColorVariantName);
+      console.log('Final size option name:', sizeOptionName);
+      console.log('Sending to backend:', { userId, productId: product.id, quantity: 1, sizeOptionName, colorVariantName: finalColorVariantName, price });
+      console.log('=== End Price Calculation Debug ===');
 
       if (userId) {
         // Logged in user - save to database
@@ -241,6 +325,9 @@ export default function Shopping({ onCartChange }) {
     } catch (error) {
 
       console.error('Error adding to cart:', error);
+      console.error('Error details:', error.response?.data);
+      setAddToCartError(error.response?.data?.message || error.message || 'Failed to add to cart');
+      return false;
 
     }
 
@@ -324,6 +411,7 @@ export default function Shopping({ onCartChange }) {
   useEffect(() => {
     if (selectedProduct) {
       setCurrentImageIndex(0);
+      setSelectedColor(null);
       setSelectedSize(null);
       setIsZoomed(false);
     }
@@ -348,7 +436,31 @@ export default function Shopping({ onCartChange }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <h3 className="text-red-800 font-bold mb-2">Error Loading Products</h3>
+          <p className="text-red-600">{error}</p>
+          <button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              loadProducts();
+            }}
+            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -514,145 +626,6 @@ export default function Shopping({ onCartChange }) {
 
 
 
-        {/* Order History */}
-
-        {orders.length > 0 && (
-
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Order History</h2>
-
-            <div className="overflow-x-auto">
-
-              <table className="min-w-full">
-
-                <thead>
-
-                  <tr className="bg-gray-50">
-
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Order ID</th>
-
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
-
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
-
-                  </tr>
-
-                </thead>
-
-                <tbody>
-
-                  {orders.map((order) => {
-
-                    const isExpanded = expandedOrders[order.id];
-
-                    return (
-
-                    <React.Fragment key={order.id}>
-
-                      <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedOrders(prev => ({ ...prev, [order.id]: !prev[order.id] }))}>
-
-                        <td className="px-4 py-3 text-sm text-gray-800">{order.id.substring(0, 8)}...</td>
-
-                        <td className="px-4 py-3 text-sm text-gray-800">{formatPrice(order.total)}</td>
-
-                        <td className="px-4 py-3">
-
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-
-                            order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-
-                            order.status === 'Shipped' ? 'bg-yellow-100 text-yellow-800' :
-
-                            'bg-blue-100 text-blue-800'
-
-                          }`}>
-
-                            {order.status}
-
-                          </span>
-
-                        </td>
-
-                        <td className="px-4 py-3 text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
-
-                      </tr>
-
-                      {isExpanded && (
-
-                        <tr>
-
-                          <td colSpan="4" className="px-4 py-4 bg-gray-50">
-
-                            <div className="space-y-3">
-
-                              <div>
-
-                                <span className="font-semibold text-gray-700">Items:</span>
-
-                                <div className="mt-2 space-y-2">
-
-                                  {order.items && order.items.map((item, idx) => (
-
-                                    <div key={idx} className="flex justify-between text-sm text-gray-600">
-
-                                      <span>{item.productName} x {item.quantity}</span>
-
-                                      <span>{formatPrice(item.price * item.quantity)}</span>
-
-                                    </div>
-
-                                  ))}
-
-                                </div>
-
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-
-                                <div>
-
-                                  <span className="font-semibold text-gray-700">Shipping Address:</span>
-
-                                  <p className="text-gray-600">{order.shippingAddress || '-'}</p>
-
-                                </div>
-
-                                <div>
-
-                                  <span className="font-semibold text-gray-700">Payment Method:</span>
-
-                                  <p className="text-gray-600">{order.paymentMethod || '-'}</p>
-
-                                </div>
-
-                              </div>
-
-                            </div>
-
-                          </td>
-
-                        </tr>
-
-                      )}
-
-                    </React.Fragment>
-
-                    );
-
-                  })}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          </div>
-
-        )}
 
 
 
@@ -743,23 +716,64 @@ export default function Shopping({ onCartChange }) {
                   )}
                   <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2 sm:mb-3">
                     {(() => {
-                      const basePrice = selectedProduct.offerPercentage > 0
+                      // Determine which variant and size options to use based on selection
+                      let activeVariant = null;
+                      let sizeOptionsToUse = null;
+
+                      if (selectedColor !== null && selectedProduct.colorVariants && selectedProduct.colorVariants[selectedColor]) {
+                        // Color explicitly selected - use that color's size options
+                        activeVariant = selectedProduct.colorVariants[selectedColor];
+                        sizeOptionsToUse = activeVariant.sizeOptions && activeVariant.sizeOptions.length > 0
+                          ? activeVariant.sizeOptions
+                          : (selectedProduct.sizeOptions && selectedProduct.sizeOptions.length > 0 ? selectedProduct.sizeOptions : null);
+                      } else {
+                        // No color selected - use product-level size options
+                        activeVariant = null;
+                        sizeOptionsToUse = selectedProduct.sizeOptions && selectedProduct.sizeOptions.length > 0
+                          ? selectedProduct.sizeOptions
+                          : null;
+                      }
+
+                      console.log('=== Modal Price Calculation ===');
+                      console.log('Selected color:', selectedColor);
+                      console.log('Selected size:', selectedSize);
+                      console.log('Active variant:', activeVariant);
+                      console.log('Size options to use:', sizeOptionsToUse);
+                      console.log('Size options length:', sizeOptionsToUse?.length);
+
+                      // Ceiling rounding function to avoid floating-point precision issues
+                      const ceilPrice = (value) => Math.ceil(value);
+
+                      // Calculate base price with offer
+                      let price = selectedProduct.offerPercentage > 0
                         ? selectedProduct.price - (selectedProduct.price * selectedProduct.offerPercentage / 100)
                         : selectedProduct.price;
-                      const defaultVariant = selectedProduct.colorVariants && selectedProduct.colorVariants.length > 0
-                        ? selectedProduct.colorVariants[selectedProduct.colorVariants.findIndex(v => v.isDefault) || 0]
-                        : null;
-                      const activeVariant = selectedColor !== null && selectedProduct.colorVariants
-                        ? selectedProduct.colorVariants[selectedColor]
-                        : defaultVariant;
-                      const colorPriceAdjustment = activeVariant ? activeVariant.priceAdjustment : 0;
-                      const sizeOptionsToUse = activeVariant && activeVariant.sizeOptions && activeVariant.sizeOptions.length > 0
-                        ? activeVariant.sizeOptions
-                        : selectedProduct.sizeOptions;
-                      if (selectedSize !== null && sizeOptionsToUse && sizeOptionsToUse[selectedSize]) {
-                        return formatPrice(basePrice + colorPriceAdjustment + sizeOptionsToUse[selectedSize].priceAdjustment);
+
+                      console.log('Base price (with offer):', price);
+
+                      // Add color adjustment if color is selected
+                      if (activeVariant) {
+                        const colorAdj = activeVariant.priceAdjustment || 0;
+                        price += colorAdj;
+                        console.log('Color adjustment:', colorAdj, 'Price after color:', price);
                       }
-                      return formatPrice(basePrice + colorPriceAdjustment);
+
+                      // Add size adjustment if size is selected
+                      if (selectedSize !== null && selectedSize >= 0 && sizeOptionsToUse && sizeOptionsToUse[selectedSize]) {
+                        const sizeOption = sizeOptionsToUse[selectedSize];
+                        const sizeAdj = sizeOption.priceAdjustment || 0;
+                        price += sizeAdj;
+                        console.log('Size adjustment:', sizeAdj, 'Size option:', sizeOption.name, 'Price after size:', price);
+                      } else {
+                        console.log('Size adjustment skipped - selectedSize:', selectedSize, 'sizeOptionsToUse:', sizeOptionsToUse);
+                      }
+
+                      // Apply ceiling rounding to final price
+                      price = ceilPrice(price);
+                      console.log('Final price (after ceiling):', price);
+                      console.log('=== End Modal Price Calculation ===');
+
+                      return formatPrice(price);
                     })()}
                   </p>
                   {selectedProduct.offerPercentage > 0 && (
@@ -775,22 +789,19 @@ export default function Shopping({ onCartChange }) {
                     <div className="flex flex-wrap gap-2 sm:gap-3">
                       {selectedProduct.colorVariants.map((variant, index) => {
                         const isSelected = selectedColor === index;
-                        const defaultVariant = selectedProduct.colorVariants.findIndex(v => v.isDefault) || 0;
-                        const activeVariant = selectedColor !== null ? selectedProduct.colorVariants[selectedColor] : selectedProduct.colorVariants[defaultVariant];
                         return (
                           <button
                             key={index}
                             onClick={() => {
                               setSelectedColor(index);
-                              setSelectedSize(null);
+                              setSelectedSize(null); // Reset size when color changes to avoid index mismatch
                               setCurrentImageIndex(0);
                             }}
-                            disabled={variant.stock === 0}
-                            className={`flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 transition-all duration-300 transform hover:scale-105 ${
+                            className={`flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 transition-all duration-300 transform hover:scale-105 cursor-pointer ${
                               isSelected
                                 ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg scale-105'
                                 : 'border-gray-200 hover:border-blue-300 bg-white hover:shadow-md'
-                            } ${variant.stock === 0 ? 'opacity-50 cursor-not-allowed grayscale' : 'cursor-pointer'}`}
+                            } ${variant.stock === 0 ? 'opacity-60 grayscale' : ''}`}
                           >
                             {variant.hexCode && (
                               <div
@@ -814,25 +825,42 @@ export default function Shopping({ onCartChange }) {
                 )}
 
                 {(() => {
-                  const defaultVariant = selectedProduct.colorVariants && selectedProduct.colorVariants.length > 0
-                    ? selectedProduct.colorVariants[selectedProduct.colorVariants.findIndex(v => v.isDefault) || 0]
-                    : null;
-                  const activeVariant = selectedColor !== null && selectedProduct.colorVariants
-                    ? selectedProduct.colorVariants[selectedColor]
-                    : defaultVariant;
-                  const sizeOptionsToUse = activeVariant && activeVariant.sizeOptions && activeVariant.sizeOptions.length > 0
-                    ? activeVariant.sizeOptions
-                    : selectedProduct.sizeOptions;
+                  // Determine which variant and size options to use based on selection
+                  let activeVariant = null;
+                  let sizeOptionsToUse = null;
+
+                  if (selectedColor !== null && selectedProduct.colorVariants && selectedProduct.colorVariants[selectedColor]) {
+                    // Color explicitly selected - use that color's size options
+                    activeVariant = selectedProduct.colorVariants[selectedColor];
+                    sizeOptionsToUse = activeVariant.sizeOptions && activeVariant.sizeOptions.length > 0
+                      ? activeVariant.sizeOptions
+                      : (selectedProduct.sizeOptions && selectedProduct.sizeOptions.length > 0 ? selectedProduct.sizeOptions : null);
+                  } else {
+                    // No color selected - use product-level size options
+                    activeVariant = null;
+                    sizeOptionsToUse = selectedProduct.sizeOptions && selectedProduct.sizeOptions.length > 0
+                      ? selectedProduct.sizeOptions
+                      : null;
+                  }
+
                   return sizeOptionsToUse && sizeOptionsToUse.length > 0 && (
                     <div className="mb-6 sm:mb-8">
                       <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Select Size/Weight</h3>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                         {sizeOptionsToUse.map((sizeOption, index) => {
-                          const basePrice = selectedProduct.offerPercentage > 0
+                          // Calculate price for this size option
+                          let price = selectedProduct.offerPercentage > 0
                             ? selectedProduct.price - (selectedProduct.price * selectedProduct.offerPercentage / 100)
                             : selectedProduct.price;
-                          const colorPriceAdjustment = activeVariant ? activeVariant.priceAdjustment : 0;
-                          const adjustedPrice = basePrice + colorPriceAdjustment + sizeOption.priceAdjustment;
+
+                          // Add color adjustment if color is selected
+                          if (activeVariant) {
+                            price += activeVariant.priceAdjustment || 0;
+                          }
+
+                          // Add size adjustment
+                          price += sizeOption.priceAdjustment || 0;
+
                           const isSelected = selectedSize === index;
                           return (
                             <button
@@ -846,7 +874,7 @@ export default function Shopping({ onCartChange }) {
                               } ${sizeOption.stock === 0 ? 'opacity-50 cursor-not-allowed grayscale' : 'cursor-pointer'}`}
                             >
                               <div className="text-xs sm:text-sm font-bold">{sizeOption.name}</div>
-                              <div className="text-xs mt-1 opacity-90">{formatPrice(adjustedPrice)}</div>
+                              <div className="text-xs mt-1 opacity-90">{formatPrice(price)}</div>
                               <div className="text-xs mt-1 opacity-75">{sizeOption.stock > 0 ? `${sizeOption.stock} in stock` : 'Out of stock'}</div>
                             </button>
                           );
@@ -928,14 +956,7 @@ export default function Shopping({ onCartChange }) {
                   <button
                     onClick={async () => {
                       setAddToCartError('');
-                      const defaultVariant = selectedProduct.colorVariants && selectedProduct.colorVariants.length > 0
-                        ? selectedProduct.colorVariants[selectedProduct.colorVariants.findIndex(v => v.isDefault) || 0]
-                        : null;
-                      const activeVariant = selectedColor !== null && selectedProduct.colorVariants
-                        ? selectedProduct.colorVariants[selectedColor]
-                        : defaultVariant;
-                      const colorVariantName = activeVariant ? activeVariant.name : null;
-                      const result = await handleAddToCart(selectedProduct, colorVariantName);
+                      const result = await handleAddToCart(selectedProduct);
                       if (result === true) {
                         setSelectedProduct(null);
                         setSelectedColor(null);

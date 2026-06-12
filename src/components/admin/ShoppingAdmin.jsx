@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Power, PowerOff, X, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit, Power, PowerOff, X, ChevronDown, ChevronUp, Search, Filter, Calendar, Users, DollarSign, Package, TrendingUp, MapPin, RefreshCw } from 'lucide-react';
 import { adminApi } from '../../services/api';
 
 export default function ShoppingAdmin() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [activeAccordion, setActiveAccordion] = useState('categories');
+  const [activeAccordion, setActiveAccordion] = useState('');
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(price);
+  };
   
   // Category state
   const [categoryFilter, setCategoryFilter] = useState({ name: '', status: '', description: '' });
@@ -63,7 +71,7 @@ export default function ShoppingAdmin() {
   };
 
   const addColorVariant = () => {
-    setColorVariants([...colorVariants, { name: '', hexCode: '', imageUrl: '', imageUrls: [], priceAdjustment: 0, sizeOptions: [], stock: 0, isDefault: colorVariants.length === 0 }]);
+    setColorVariants([...colorVariants, { name: '', hexCode: '', imageUrl: '', imageUrls: [], priceAdjustment: 0, sizeOptions: [], stock: 0 }]);
   };
 
   const removeColorVariant = (index) => {
@@ -849,7 +857,7 @@ export default function ShoppingAdmin() {
                       <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-600 font-medium">{order.userName}</td>
                       <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-600">{order.userEmail || '-'}</td>
                       <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-600">{order.userPhone || '-'}</td>
-                      <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900">${order.total.toFixed(2)}</td>
+                      <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900">{formatPrice(order.total)}</td>
                       <td className="px-4 sm:px-6 py-4">
                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${
                           order.status === 'Delivered' ? 'bg-green-100 text-green-800 border border-green-200' :
@@ -897,48 +905,66 @@ export default function ShoppingAdmin() {
 
       {/* Edit Modal */}
       {editModal.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                {editModal.type === 'category' ? (editModal.data ? 'Edit Category' : 'Add Category') :
-                 editModal.type === 'product' ? (editModal.data ? 'Edit Product' : 'Add Product') : ''}
-              </h3>
-              <button
-                onClick={() => setEditModal({ isOpen: false, type: null, data: null })}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X size={24} className="text-gray-600" />
-              </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className={`p-6 text-white ${
+              editModal.type === 'category' 
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600' 
+                : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600'
+            }`}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold">
+                    {editModal.type === 'category' ? (editModal.data ? 'Edit Category' : 'Add Category') :
+                     editModal.type === 'product' ? (editModal.data ? 'Edit Product' : 'Add Product') : ''}
+                  </h3>
+                  <p className="text-white/80 text-sm mt-1">
+                    {editModal.type === 'category' ? 'Manage category details' : 'Manage product information'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEditModal({ isOpen: false, type: null, data: null })}
+                  className="bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors"
+                >
+                  <X size={24} className="text-white" />
+                </button>
+              </div>
             </div>
-            <div className="p-4 sm:p-6">
+            <div className="flex-1 overflow-y-auto p-6">
               {editModal.type === 'category' && (
                 <form onSubmit={(e) => { e.preventDefault(); handleSaveCategory({ name: e.target.name.value, description: e.target.description.value, displaySequence: parseInt(e.target.displaySequence.value) || 0, status: e.target.status.value }); }}>
-                  <div className="space-y-5">
-                    <div>
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
+                        <div className="bg-blue-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">C</span>
+                        </div>
                         Category Name *
                       </label>
-                      <input name="name" defaultValue={editModal.data?.name} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm" placeholder="Enter category name" required />
+                      <input name="name" defaultValue={editModal.data?.name} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm bg-white" placeholder="Enter category name" required />
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
+                        <div className="bg-indigo-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">D</span>
+                        </div>
                         Description
                       </label>
-                      <textarea name="description" defaultValue={editModal.data?.description} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm resize-none" rows="3" placeholder="Enter category description" />
+                      <textarea name="description" defaultValue={editModal.data?.description} className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm resize-none bg-white" rows="3" placeholder="Enter category description" />
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
+                        <div className="bg-purple-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">I</span>
+                        </div>
                         Category Image
                       </label>
                       <div
                         className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
                           categoryImageDragging
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                            ? 'border-purple-500 bg-purple-50'
+                            : 'border-purple-300 hover:border-purple-400 hover:bg-purple-50/50'
                         }`}
                         onDrop={handleCategoryImageDrop}
                         onDragOver={handleCategoryImageDragOver}
@@ -968,8 +994,8 @@ export default function ShoppingAdmin() {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             </div>
@@ -980,9 +1006,11 @@ export default function ShoppingAdmin() {
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
+                      <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl p-5 border border-pink-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
+                          <div className="bg-pink-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">S</span>
+                          </div>
                           Display Sequence *
                         </label>
                         <input
@@ -990,22 +1018,24 @@ export default function ShoppingAdmin() {
                           type="number"
                           min="0"
                           defaultValue={editModal.data?.displaySequence !== undefined ? editModal.data.displaySequence : defaultCategorySequence}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+                          className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all shadow-sm bg-white"
                           required
                         />
                       </div>
-                      <div>
+                      <div className="bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl p-5 border border-rose-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
+                          <div className="bg-rose-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">A</span>
+                          </div>
                           Status
                         </label>
-                        <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm">
+                        <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all shadow-sm bg-white">
                           <option value="Active">Active</option>
                           <option value="Inactive">Inactive</option>
                         </select>
                       </div>
                     </div>
-                    <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3.5 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <button type="submit" className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white py-4 rounded-xl hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                       Save Category
                     </button>
                   </div>
@@ -1094,15 +1124,17 @@ export default function ShoppingAdmin() {
                   setProductValidationErrors({});
                 }}>
                   <div className="space-y-5">
-                    <div>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border border-green-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-green-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">P</span>
+                        </div>
                         Product Name *
                       </label>
                       <input
                         name="name"
                         defaultValue={editModal.data?.name || ''}
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm ${productValidationErrors.name ? 'border-red-500' : 'border-gray-200'}`}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm bg-white ${productValidationErrors.name ? 'border-red-500' : 'border-green-200'}`}
                         required
                         maxLength={validationSettings.name?.validationRules.maxLength || 100}
                         onBlur={(e) => handleFieldBlur('name', e.target.value)}
@@ -1110,15 +1142,17 @@ export default function ShoppingAdmin() {
                       />
                       <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.name || ''}</span>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-emerald-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">D</span>
+                        </div>
                         Description *
                       </label>
                       <textarea
                         name="description"
                         defaultValue={editModal.data?.description || ''}
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm resize-none ${productValidationErrors.description ? 'border-red-500' : 'border-gray-200'}`}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm resize-none bg-white ${productValidationErrors.description ? 'border-red-500' : 'border-emerald-200'}`}
                         rows="3"
                         maxLength={validationSettings.description?.validationRules.maxLength || 2000}
                         onBlur={(e) => handleFieldBlur('description', e.target.value)}
@@ -1127,9 +1161,11 @@ export default function ShoppingAdmin() {
                       <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.description || ''}</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
+                      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-5 border border-teal-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                          <div className="bg-teal-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">$</span>
+                          </div>
                           Price *
                         </label>
                         <input
@@ -1139,16 +1175,18 @@ export default function ShoppingAdmin() {
                           min={validationSettings.price?.validationRules.minValue || 0}
                           max={validationSettings.price?.validationRules.maxValue || 9999999}
                           defaultValue={editModal.data?.price || ''}
-                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm ${productValidationErrors.price ? 'border-red-500' : 'border-gray-200'}`}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all shadow-sm bg-white ${productValidationErrors.price ? 'border-red-500' : 'border-teal-200'}`}
                           required
                           onBlur={(e) => handleFieldBlur('price', e.target.value)}
                           placeholder="0.00"
                         />
                         <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.price || ''}</span>
                       </div>
-                      <div>
+                      <div className="bg-gradient-to-r from-cyan-50 to-sky-50 rounded-xl p-5 border border-cyan-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                          <div className="bg-cyan-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">S</span>
+                          </div>
                           Stock *
                         </label>
                         <input
@@ -1157,7 +1195,7 @@ export default function ShoppingAdmin() {
                           min={validationSettings.stock?.validationRules.minValue || 0}
                           max={validationSettings.stock?.validationRules.maxValue || 9999999}
                           defaultValue={editModal.data?.stock || ''}
-                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm ${productValidationErrors.stock ? 'border-red-500' : 'border-gray-200'}`}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all shadow-sm bg-white ${productValidationErrors.stock ? 'border-red-500' : 'border-cyan-200'}`}
                           required
                           onBlur={(e) => handleFieldBlur('stock', e.target.value)}
                           placeholder="0"
@@ -1165,15 +1203,17 @@ export default function ShoppingAdmin() {
                         <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.stock || ''}</span>
                       </div>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-5 border border-sky-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-sky-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">V</span>
+                        </div>
                         Seller *
                       </label>
                       <input
                         name="seller"
                         defaultValue={editModal.data?.seller || ''}
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm ${productValidationErrors.seller ? 'border-red-500' : 'border-gray-200'}`}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all shadow-sm bg-white ${productValidationErrors.seller ? 'border-red-500' : 'border-sky-200'}`}
                         maxLength={validationSettings.seller?.validationRules.maxLength || 50}
                         onBlur={(e) => handleFieldBlur('seller', e.target.value)}
                         placeholder="Enter seller name"
@@ -1181,9 +1221,11 @@ export default function ShoppingAdmin() {
                       <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.seller || ''}</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                          <div className="bg-blue-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">#</span>
+                          </div>
                           Display Sequence *
                         </label>
                         <input
@@ -1192,14 +1234,16 @@ export default function ShoppingAdmin() {
                           min="0"
                           value={editModal.data?.displaySequence !== undefined ? editModal.data.displaySequence : defaultDisplaySequence}
                           onChange={(e) => setDefaultDisplaySequence(parseInt(e.target.value) || 0)}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm"
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm bg-white"
                           required
                           onBlur={(e) => handleFieldBlur('displaySequence', e.target.value)}
                         />
                       </div>
-                      <div>
+                      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-5 border border-indigo-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                          <div className="bg-indigo-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">C</span>
+                          </div>
                           Category *
                         </label>
                         <select
@@ -1217,7 +1261,7 @@ export default function ShoppingAdmin() {
                               }
                             }
                           }}
-                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm ${productValidationErrors.category ? 'border-red-500' : 'border-gray-200'}`}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm bg-white ${productValidationErrors.category ? 'border-red-500' : 'border-indigo-200'}`}
                           required
                         >
                           <option value="">Select Category</option>
@@ -1228,12 +1272,14 @@ export default function ShoppingAdmin() {
                         <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.category || ''}</span>
                       </div>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-5 border border-violet-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-violet-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">I</span>
+                        </div>
                         Primary Image *
                       </label>
-                      <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-green-400 hover:bg-green-50 transition-all cursor-pointer" onClick={() => document.getElementById('productPrimaryImageInput').click()}>
+                      <div className="relative border-2 border-dashed border-violet-300 rounded-xl p-4 text-center hover:border-violet-500 hover:bg-violet-50/50 transition-all cursor-pointer" onClick={() => document.getElementById('productPrimaryImageInput').click()}>
                         <input
                           id="productPrimaryImageInput"
                           name="imageUrl"
@@ -1246,8 +1292,8 @@ export default function ShoppingAdmin() {
                           <img src={productPrimaryPreview || editModal.data?.imageUrl} alt="Preview" className="max-h-40 mx-auto rounded-lg shadow-md" />
                         ) : (
                           <div className="space-y-2">
-                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-12 h-12 bg-violet-100 rounded-full flex items-center justify-center mx-auto">
+                              <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             </div>
@@ -1257,12 +1303,14 @@ export default function ShoppingAdmin() {
                       </div>
                       <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.imageUrl || ''}</span>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 rounded-xl p-5 border border-purple-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-purple-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">A</span>
+                        </div>
                         Additional Images *
                       </label>
-                      <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-green-400 hover:bg-green-50 transition-all cursor-pointer" onClick={() => document.getElementById('productAdditionalImagesInput').click()}>
+                      <div className="relative border-2 border-dashed border-purple-300 rounded-xl p-4 text-center hover:border-purple-500 hover:bg-purple-50/50 transition-all cursor-pointer" onClick={() => document.getElementById('productAdditionalImagesInput').click()}>
                         <input
                           id="productAdditionalImagesInput"
                           name="imageUrls"
@@ -1276,8 +1324,8 @@ export default function ShoppingAdmin() {
                           className="hidden"
                         />
                         <div className="space-y-2">
-                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                           </div>
@@ -1307,15 +1355,17 @@ export default function ShoppingAdmin() {
                         ))}
                       </div>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-fuchsia-50 to-pink-50 rounded-xl p-5 border border-fuchsia-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-fuchsia-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">H</span>
+                        </div>
                         Highlights (one per line) *
                       </label>
                       <textarea
                         name="highlights"
                         defaultValue={editModal.data?.highlights?.join('\n') || ''}
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm resize-none ${productValidationErrors.highlights ? 'border-red-500' : 'border-gray-200'}`}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500 transition-all shadow-sm resize-none bg-white ${productValidationErrors.highlights ? 'border-red-500' : 'border-fuchsia-200'}`}
                         rows="3"
                         placeholder="Enter highlights, one per line"
                         required
@@ -1324,9 +1374,11 @@ export default function ShoppingAdmin() {
                       <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.highlights || ''}</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
+                      <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl p-5 border border-pink-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                          <div className="bg-pink-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">%</span>
+                          </div>
                           Offer Percentage (%)
                         </label>
                         <input
@@ -1335,15 +1387,17 @@ export default function ShoppingAdmin() {
                           min="0"
                           max="100"
                           defaultValue={editModal.data?.offerPercentage || 0}
-                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm ${productValidationErrors.offerPercentage ? 'border-red-500' : 'border-gray-200'}`}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all shadow-sm bg-white ${productValidationErrors.offerPercentage ? 'border-red-500' : 'border-pink-200'}`}
                           placeholder="0-100"
                           onBlur={(e) => handleFieldBlur('offerPercentage', e.target.value)}
                         />
                         <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.offerPercentage || ''}</span>
                       </div>
-                      <div>
+                      <div className="bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl p-5 border border-rose-100">
                         <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                          <div className="bg-rose-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">★</span>
+                          </div>
                           Rating
                         </label>
                         <input
@@ -1353,18 +1407,20 @@ export default function ShoppingAdmin() {
                           max="5"
                           step="0.1"
                           defaultValue={editModal.data?.rating || 0}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm"
+                          className="w-full px-4 py-3 border-2 border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all shadow-sm bg-white"
                           placeholder="0-5"
                           onBlur={(e) => handleFieldBlur('rating', e.target.value)}
                         />
                       </div>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-orange-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">S</span>
+                        </div>
                         Size/Weight Options
                       </label>
-                      <div className="space-y-3 bg-gray-50 rounded-xl p-4" id="sizeOptionsContainer">
+                      <div className="space-y-3 bg-white rounded-xl p-4 border border-orange-200" id="sizeOptionsContainer">
                         {sizeOptions.map((sizeOption, index) => (
                           <div key={index} className="flex flex-col sm:flex-row gap-2 items-center">
                             <input
@@ -1372,7 +1428,7 @@ export default function ShoppingAdmin() {
                               placeholder="Size/Weight (e.g., S, M, L, 1kg)"
                               value={sizeOption.name}
                               onChange={(e) => updateSizeOption(index, 'name', e.target.value)}
-                              className="flex-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                              className="flex-1 w-full px-3 py-2 border-2 border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all text-sm bg-white"
                               data-size-name={index}
                             />
                             <input
@@ -1380,7 +1436,7 @@ export default function ShoppingAdmin() {
                               placeholder="Price Adj."
                               value={sizeOption.priceAdjustment}
                               onChange={(e) => updateSizeOption(index, 'priceAdjustment', parseFloat(e.target.value) || 0)}
-                              className="w-full sm:w-24 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                              className="w-full sm:w-24 px-3 py-2 border-2 border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all text-sm bg-white"
                               data-price-adj={index}
                             />
                             <input
@@ -1388,7 +1444,7 @@ export default function ShoppingAdmin() {
                               placeholder="Stock"
                               value={sizeOption.stock}
                               onChange={(e) => updateSizeOption(index, 'stock', parseInt(e.target.value) || 0)}
-                              className="w-full sm:w-20 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                              className="w-full sm:w-20 px-3 py-2 border-2 border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all text-sm bg-white"
                               data-stock={index}
                             />
                             <button
@@ -1403,16 +1459,18 @@ export default function ShoppingAdmin() {
                         <button
                           type="button"
                           onClick={addSizeOption}
-                          className="w-full sm:w-auto text-green-600 text-sm font-bold hover:text-green-800 flex items-center justify-center gap-1 py-2 border-2 border-dashed border-green-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all"
+                          className="w-full sm:w-auto text-orange-600 text-sm font-bold hover:text-orange-800 flex items-center justify-center gap-1 py-2 border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all"
                         >
                           <Plus size={16} />
                           Add Size/Weight Option
                         </button>
                       </div>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-5 border border-amber-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-amber-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">C</span>
+                        </div>
                         Color Variants
                       </label>
                       <div className="space-y-4">
@@ -1420,7 +1478,7 @@ export default function ShoppingAdmin() {
                           <button
                             type="button"
                             onClick={addColorVariant}
-                            className="w-full text-green-600 text-sm font-bold hover:text-green-800 flex items-center justify-center gap-1 py-3 border-2 border-dashed border-green-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all"
+                            className="w-full text-amber-600 text-sm font-bold hover:text-amber-800 flex items-center justify-center gap-1 py-3 border-2 border-dashed border-amber-300 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all"
                           >
                             <Plus size={16} />
                             Add First Color Variant
@@ -1435,8 +1493,8 @@ export default function ShoppingAdmin() {
                                   onClick={() => setSelectedColorVariant(index)}
                                   className={`flex-shrink-0 px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
                                     selectedColorVariant === index
-                                      ? 'border-green-500 bg-green-50'
-                                      : 'border-gray-200 hover:border-green-300'
+                                      ? 'border-amber-500 bg-amber-50'
+                                      : 'border-gray-200 hover:border-amber-300'
                                   }`}
                                 >
                                   {variant.hexCode && (
@@ -1463,14 +1521,14 @@ export default function ShoppingAdmin() {
                               <button
                                 type="button"
                                 onClick={addColorVariant}
-                                className="flex-shrink-0 px-4 py-2 rounded-lg border-2 border-dashed border-green-300 text-green-600 hover:border-green-500 hover:bg-green-50 transition-all flex items-center gap-1"
+                                className="flex-shrink-0 px-4 py-2 rounded-lg border-2 border-dashed border-amber-300 text-amber-600 hover:border-amber-500 hover:bg-amber-50 transition-all flex items-center gap-1"
                               >
                                 <Plus size={16} />
                                 Add Color
                               </button>
                             </div>
                             {colorVariants[selectedColorVariant] && (
-                              <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                              <div className="bg-white rounded-xl p-4 space-y-4 border border-amber-200">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   <div>
                                     <label className="block text-xs font-semibold text-gray-600 mb-1">Color Name *</label>
@@ -1478,7 +1536,7 @@ export default function ShoppingAdmin() {
                                       type="text"
                                       value={colorVariants[selectedColorVariant].name}
                                       onChange={(e) => updateColorVariant(selectedColorVariant, 'name', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                      className="w-full px-3 py-2 border-2 border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm bg-white"
                                       placeholder="e.g., Black, Red, Blue"
                                     />
                                   </div>
@@ -1495,7 +1553,7 @@ export default function ShoppingAdmin() {
                                         type="text"
                                         value={colorVariants[selectedColorVariant].hexCode || ''}
                                         onChange={(e) => updateColorVariant(selectedColorVariant, 'hexCode', e.target.value)}
-                                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                        className="flex-1 px-3 py-2 border-2 border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm bg-white"
                                         placeholder="#000000"
                                       />
                                     </div>
@@ -1509,7 +1567,7 @@ export default function ShoppingAdmin() {
                                       step="0.01"
                                       value={colorVariants[selectedColorVariant].priceAdjustment}
                                       onChange={(e) => updateColorVariant(selectedColorVariant, 'priceAdjustment', parseFloat(e.target.value) || 0)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                      className="w-full px-3 py-2 border-2 border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm bg-white"
                                       placeholder="0.00"
                                     />
                                   </div>
@@ -1519,30 +1577,14 @@ export default function ShoppingAdmin() {
                                       type="number"
                                       value={colorVariants[selectedColorVariant].stock}
                                       onChange={(e) => updateColorVariant(selectedColorVariant, 'stock', parseInt(e.target.value) || 0)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                                      className="w-full px-3 py-2 border-2 border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm bg-white"
                                       placeholder="0"
                                     />
-                                  </div>
-                                  <div className="flex items-center gap-2 pt-5">
-                                    <input
-                                      type="checkbox"
-                                      id={`isDefault-${selectedColorVariant}`}
-                                      checked={colorVariants[selectedColorVariant].isDefault}
-                                      onChange={(e) => {
-                                        const updated = colorVariants.map((v, i) => ({
-                                          ...v,
-                                          isDefault: i === selectedColorVariant ? e.target.checked : false
-                                        }));
-                                        setColorVariants(updated);
-                                      }}
-                                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                                    />
-                                    <label htmlFor={`isDefault-${selectedColorVariant}`} className="text-xs font-semibold text-gray-600">Default Color</label>
                                   </div>
                                 </div>
                                 <div>
                                   <label className="block text-xs font-semibold text-gray-600 mb-1">Primary Image *</label>
-                                  <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-green-400 hover:bg-green-50 transition-all cursor-pointer" onClick={() => document.getElementById(`colorImage-${selectedColorVariant}`).click()}>
+                                  <div className="relative border-2 border-dashed border-amber-300 rounded-lg p-3 text-center hover:border-amber-500 hover:bg-amber-50 transition-all cursor-pointer" onClick={() => document.getElementById(`colorImage-${selectedColorVariant}`).click()}>
                                     <input
                                       id={`colorImage-${selectedColorVariant}`}
                                       type="file"
@@ -1601,7 +1643,7 @@ export default function ShoppingAdmin() {
                                     <button
                                       type="button"
                                       onClick={() => addColorVariantSizeOption(selectedColorVariant)}
-                                      className="text-green-600 text-xs font-bold hover:text-green-800 flex items-center gap-1"
+                                      className="text-amber-600 text-xs font-bold hover:text-amber-800 flex items-center gap-1"
                                     >
                                       <Plus size={12} />
                                       Add Size Option
@@ -1614,17 +1656,19 @@ export default function ShoppingAdmin() {
                         )}
                       </div>
                     </div>
-                    <div>
+                    <div className="bg-gradient-to-r from-yellow-50 to-lime-50 rounded-xl p-5 border border-yellow-100">
                       <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-green-600 rounded-full"></span>
+                        <div className="bg-yellow-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">S</span>
+                        </div>
                         Status
                       </label>
-                      <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm">
+                      <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-yellow-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all shadow-sm bg-white">
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                       </select>
                     </div>
-                    <button type="submit" className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3.5 rounded-xl hover:from-green-700 hover:to-green-800 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <button type="submit" className="w-full bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white py-4 rounded-xl hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                       Save Product
                     </button>
                   </div>
@@ -1671,108 +1715,202 @@ export default function ShoppingAdmin() {
 
       {/* Order Detail Modal */}
       {orderDetailModal.isOpen && orderDetailModal.data && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-2xl font-bold text-gray-800">Order Details</h3>
-              <button
-                onClick={() => setOrderDetailModal({ isOpen: false, data: null })}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X size={24} className="text-gray-600" />
-              </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 p-6 text-white">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">Order Details</h3>
+                  <p className="text-purple-100 text-sm">Order ID: {orderDetailModal.data.id.substring(0, 12)}...</p>
+                </div>
+                <button
+                  onClick={() => setOrderDetailModal({ isOpen: false, data: null })}
+                  className="bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors"
+                >
+                  <X size={24} className="text-white" />
+                </button>
+              </div>
             </div>
-            <div className="p-6 space-y-6">
-              {/* Order Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Order Information</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Order ID:</span>
-                    <p className="font-medium">{orderDetailModal.data.id.substring(0, 8)}...</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Status:</span>
-                    <p className="font-medium">{orderDetailModal.data.status}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Date:</span>
-                    <p className="font-medium">{new Date(orderDetailModal.data.createdAt).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Total:</span>
-                    <p className="font-medium">${orderDetailModal.data.total.toFixed(2)}</p>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Order Info Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-600 rounded-lg p-2">
+                      <Calendar size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Order Date</p>
+                      <p className="font-semibold text-gray-800 text-sm">
+                        {new Date(orderDetailModal.data.createdAt).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Customer Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Customer Information</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">User ID:</span>
-                    <p className="font-medium">{orderDetailModal.data.userId || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Name:</span>
-                    <p className="font-medium">{orderDetailModal.data.userName}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Email:</span>
-                    <p className="font-medium">{orderDetailModal.data.userEmail || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Phone:</span>
-                    <p className="font-medium">{orderDetailModal.data.userPhone || '-'}</p>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-600 rounded-lg p-2">
+                      <Users size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Customer</p>
+                      <p className="font-semibold text-gray-800 text-sm">{orderDetailModal.data.userName || 'N/A'}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Shipping & Billing */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Shipping & Billing</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Shipping Address:</span>
-                    <p className="font-medium">{orderDetailModal.data.shippingAddress || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Billing Address:</span>
-                    <p className="font-medium">{orderDetailModal.data.billingAddress || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Payment Method:</span>
-                    <p className="font-medium">{orderDetailModal.data.paymentMethod || '-'}</p>
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-600 rounded-lg p-2">
+                      <DollarSign size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Total Amount</p>
+                      <p className="font-bold text-gray-800 text-sm">{formatPrice(orderDetailModal.data.total)}</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Order Items */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Order Items</h4>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Package size={18} className="text-purple-600" />
+                    Order Items
+                  </h4>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full">
-                    <thead className="bg-white">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Product</th>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Quantity</th>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Price</th>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Total</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Variant</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Qty</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-100">
                       {orderDetailModal.data.items && orderDetailModal.data.items.map((item, idx) => (
-                        <tr key={idx} className="border-t border-gray-200">
-                          <td className="px-4 py-2 text-sm">{item.productName}</td>
-                          <td className="px-4 py-2 text-sm">{item.quantity}</td>
-                          <td className="px-4 py-2 text-sm">${item.price.toFixed(2)}</td>
-                          <td className="px-4 py-2 text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</td>
+                        <tr key={idx} className="hover:bg-purple-50 transition-colors">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{item.productName}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {item.sizeOptionName && <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs mr-2">Size: {item.sizeOptionName}</span>}
+                            {item.colorVariantName && <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Color: {item.colorVariantName}</span>}
+                            {!item.sizeOptionName && !item.colorVariantName && <span className="text-gray-400">-</span>}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-800">{formatPrice(item.price)}</td>
+                          <td className="px-4 py-3 text-sm text-center text-gray-800">{item.quantity}</td>
+                          <td className="px-4 py-3 text-sm text-right font-bold text-purple-600">{formatPrice(item.price * item.quantity)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Order Summary */}
+              <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200">
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <TrendingUp size={18} className="text-green-600" />
+                  Order Summary
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium text-gray-800">{formatPrice(orderDetailModal.data.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Shipping</span>
+                    <span className="font-medium text-gray-800">{formatPrice(99)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Tax (18%)</span>
+                    <span className="font-medium text-gray-800">{formatPrice((orderDetailModal.data.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0) * 0.18)}</span>
+                  </div>
+                  <div className="border-t-2 border-gray-300 pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-gray-800">Total</span>
+                      <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">{formatPrice(orderDetailModal.data.total)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Addresses */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <div className="bg-purple-100 rounded-lg p-1.5">
+                      <MapPin size={16} className="text-purple-600" />
+                    </div>
+                    Shipping Address
+                  </h4>
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{orderDetailModal.data.shippingAddress || 'N/A'}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <div className="bg-blue-100 rounded-lg p-1.5">
+                      <MapPin size={16} className="text-blue-600" />
+                    </div>
+                    Billing Address
+                  </h4>
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{orderDetailModal.data.billingAddress || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Customer Info */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-green-100 rounded-lg p-1.5">
+                    <Users size={16} className="text-green-600" />
+                  </div>
+                  Customer Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500">Email</p>
+                    <p className="text-sm font-medium text-gray-800">{orderDetailModal.data.userEmail || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <p className="text-sm font-medium text-gray-800">{orderDetailModal.data.userPhone || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-amber-100 rounded-lg p-1.5">
+                    <DollarSign size={16} className="text-amber-600" />
+                  </div>
+                  Payment Method
+                </h4>
+                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 inline-block">{orderDetailModal.data.paymentMethod || 'N/A'}</p>
+              </div>
+
+              {/* Status */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-200">
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <RefreshCw size={18} className="text-purple-600" />
+                  Order Status
+                </h4>
+                <span className={`px-4 py-2 rounded-full text-sm font-bold ${
+                  orderDetailModal.data.status === 'Delivered' ? 'bg-green-100 text-green-800 border border-green-200' :
+                  orderDetailModal.data.status === 'Shipped' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                  orderDetailModal.data.status === 'Cancelled' ? 'bg-red-100 text-red-800 border border-red-200' :
+                  'bg-blue-100 text-blue-800 border border-blue-200'
+                }`}>
+                  {orderDetailModal.data.status}
+                </span>
               </div>
             </div>
           </div>

@@ -6,10 +6,12 @@ export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = fa
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
+  const [config, setConfig] = useState({ shippingCost: 99, taxRate: 0.18 });
 
   useEffect(() => {
     loadCart();
     loadProducts();
+    loadConfig();
   }, []);
 
   const loadCart = async () => {
@@ -34,6 +36,15 @@ export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = fa
       setProducts(response.data);
     } catch (error) {
       console.error('Error loading products:', error);
+    }
+  };
+
+  const loadConfig = async () => {
+    try {
+      const response = await shoppingApi.getConfig();
+      setConfig(response.data);
+    } catch (error) {
+      console.error('Error loading config:', error);
     }
   };
 
@@ -125,12 +136,12 @@ export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = fa
     };
   });
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const originalSubtotal = cartItems.reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
+  const subtotal = Math.ceil(cartItems.reduce((sum, item) => sum + item.totalPrice, 0));
+  const originalSubtotal = Math.ceil(cartItems.reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0));
   const totalDiscount = originalSubtotal - subtotal;
-  const shipping = subtotal > 0 ? 99 : 0;
-  const tax = subtotal * 0.18;
-  const total = subtotal + shipping + tax;
+  const shipping = subtotal > 0 ? config.shippingCost : 0;
+  const tax = Math.ceil(subtotal * config.taxRate);
+  const total = Math.ceil(subtotal + shipping + tax);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
