@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Menu, X, Search, X as CloseIcon } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react';
 import HomePage from './components/HomePage';
 import Shopping from './components/Shopping';
 import Advertising from './components/Advertising';
@@ -27,9 +27,6 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -40,7 +37,6 @@ function App() {
       setUserRole(role || 'User');
       loadCart();
     }
-    loadProducts();
   }, []);
 
   const loadCart = async () => {
@@ -61,14 +57,6 @@ function App() {
     }
   };
 
-  const loadProducts = async () => {
-    try {
-      const response = await shoppingApi.getProducts();
-      setProducts(response.data);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    }
-  };
 
   const handleLogin = async (role) => {
     setIsLoggedIn(true);
@@ -134,27 +122,6 @@ function App() {
     loadCart();
   };
 
-  const handleSearch = async (query) => {
-    setSearchQuery(query);
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    try {
-      const response = await shoppingApi.getProducts();
-      const allProducts = response.data;
-      const filtered = allProducts.filter(product =>
-        product.name.toLowerCase().includes(query.toLowerCase()) ||
-        product.description?.toLowerCase().includes(query.toLowerCase()) ||
-        product.category?.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchResults(filtered);
-    } catch (error) {
-      console.error('Error searching:', error);
-    }
-  };
-
   const Navigation = () => {
     const navigate = useNavigate();
 
@@ -164,18 +131,12 @@ function App() {
           <div className="flex justify-between items-center h-16 sm:h-20">
             <div className="flex items-center space-x-3 sm:space-x-4">
               <button
-                onClick={() => setShowSearch(!showSearch)}
-                className="p-2 sm:p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 backdrop-blur-sm hover:scale-105"
-              >
-                <Search size={20} sm={24} className="text-white" />
-              </button>
-              <button
                 onClick={() => setShowCartModal(true)}
-                className="relative p-2 sm:p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 backdrop-blur-sm hover:scale-105"
+                className="relative p-3 sm:p-4 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 backdrop-blur-sm hover:scale-105"
               >
-                <ShoppingCart size={20} sm={24} className="text-white" />
+                <ShoppingCart size={28} sm={32} className="text-white" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-lg animate-pulse">
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-lg animate-pulse">
                     {cartCount}
                   </span>
                 )}
@@ -265,68 +226,6 @@ function App() {
             </div>
           )}
         </div>
-
-        {/* Search Dropdown */}
-        {showSearch && (
-          <div className="absolute top-full left-0 right-0 bg-white shadow-xl border-t border-gray-200 z-50">
-            <div className="max-w-7xl mx-auto px-4 py-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products, services..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full px-4 py-3 pl-12 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  autoFocus
-                />
-                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <button
-                  onClick={() => {
-                    setShowSearch(false);
-                    setSearchQuery('');
-                    setSearchResults([]);
-                  }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <CloseIcon size={20} />
-                </button>
-              </div>
-              {searchResults.length > 0 && (
-                <div className="mt-4 max-h-96 overflow-y-auto">
-                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Search Results</h3>
-                  {searchResults.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        setShowSearch(false);
-                        setSearchQuery('');
-                        setSearchResults([]);
-                        // Store selected product in localStorage for Shopping component to open modal
-                        localStorage.setItem('selectedProductId', product.id);
-                        window.location.href = '/shopping';
-                      }}
-                      className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-16 h-16 object-cover rounded-lg"
-                      />
-                      <div>
-                        <h4 className="font-medium text-gray-800">{product.name}</h4>
-                        <p className="text-sm text-gray-500">{product.category}</p>
-                        <p className="text-sm font-semibold text-blue-600">₹{product.price}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {searchQuery.length >= 2 && searchResults.length === 0 && (
-                <p className="mt-4 text-gray-500 text-center">No results found</p>
-              )}
-            </div>
-          </div>
-        )}
       </nav>
     );
   };

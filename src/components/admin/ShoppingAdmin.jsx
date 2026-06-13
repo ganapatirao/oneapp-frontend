@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Power, PowerOff, X, ChevronDown, ChevronUp, Search, Filter, Calendar, Users, DollarSign, Package, TrendingUp, MapPin, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Edit, Power, PowerOff, X, ChevronDown, ChevronUp, Search, Filter, Calendar, Users, DollarSign, Package, TrendingUp, MapPin, RefreshCw, Sparkles, ShieldCheck, Settings, BarChart3, ShoppingCart, Layers } from 'lucide-react';
 import { adminApi } from '../../services/api';
 
 export default function ShoppingAdmin() {
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [activeAccordion, setActiveAccordion] = useState('');
@@ -22,10 +23,18 @@ export default function ShoppingAdmin() {
   const [categoryImagePreview, setCategoryImagePreview] = useState('');
   const [categoryImageDragging, setCategoryImageDragging] = useState(false);
 
+  // Subcategory state
+  const [subcategoryFilter, setSubcategoryFilter] = useState({ name: '', status: '', category: '' });
+  const [defaultSubcategorySequence, setDefaultSubcategorySequence] = useState(0);
+  const [selectedCategoryForSubcategory, setSelectedCategoryForSubcategory] = useState('');
+  const [subcategoryImagePreview, setSubcategoryImagePreview] = useState('');
+  const [subcategoryImageDragging, setSubcategoryImageDragging] = useState(false);
+
   // Product state
   const [productFilter, setProductFilter] = useState({ name: '', category: '', status: '', minPrice: '', maxPrice: '', stockLevel: '', hasOffer: '', minRating: '' });
   const [defaultDisplaySequence, setDefaultDisplaySequence] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [productValidationErrors, setProductValidationErrors] = useState({});
   const [productAdditionalImages, setProductAdditionalImages] = useState([]);
   const [productPrimaryPreview, setProductPrimaryPreview] = useState('');
@@ -276,6 +285,7 @@ export default function ShoppingAdmin() {
 
   useEffect(() => {
     loadCategories();
+    loadSubcategories();
     loadProducts();
     loadOrders();
     loadValidationSettings();
@@ -300,6 +310,15 @@ export default function ShoppingAdmin() {
       setCategories(response.data);
     } catch (error) {
       console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadSubcategories = async () => {
+    try {
+      const response = await adminApi.getShoppingSubcategories();
+      setSubcategories(response.data);
+    } catch (error) {
+      console.error('Error loading subcategories:', error);
     }
   };
 
@@ -378,6 +397,85 @@ export default function ShoppingAdmin() {
     }
   };
 
+  // Subcategory handlers
+  const handleAddSubcategory = async () => {
+    setEditModal({ isOpen: true, type: 'subcategory', data: null });
+    setSelectedCategoryForSubcategory('');
+    setSubcategoryImagePreview('');
+    try {
+      const response = await adminApi.getNextSubcategorySequence('');
+      setDefaultSubcategorySequence(response.data.nextSequence);
+    } catch (error) {
+      setDefaultSubcategorySequence(0);
+    }
+  };
+
+  const handleEditSubcategory = async (subcategory) => {
+    setEditModal({ isOpen: true, type: 'subcategory', data: subcategory });
+    setSelectedCategoryForSubcategory(subcategory.categoryId || '');
+    setDefaultSubcategorySequence(subcategory.displaySequence || 0);
+    setSubcategoryImagePreview(subcategory.imageUrl || '');
+  };
+
+  const handleSubcategoryImageDrop = (e) => {
+    e.preventDefault();
+    setSubcategoryImageDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      fileToDataUrl(file).then(setSubcategoryImagePreview);
+    }
+  };
+
+  const handleSubcategoryImageDragOver = (e) => {
+    e.preventDefault();
+    setSubcategoryImageDragging(true);
+  };
+
+  const handleSubcategoryImageDragLeave = () => {
+    setSubcategoryImageDragging(false);
+  };
+
+  const handleSubcategoryImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      fileToDataUrl(file).then(setSubcategoryImagePreview);
+    }
+  };
+
+  const handleDeleteSubcategoryClick = (subcategory) => {
+    setDeleteModal({ isOpen: true, type: 'subcategory', id: subcategory.id, name: subcategory.name });
+  };
+
+  const handleDeleteSubcategory = async () => {
+    try {
+      await adminApi.deleteShoppingSubcategory(deleteModal.id);
+      loadSubcategories();
+      loadProducts();
+      setDeleteModal({ isOpen: false, type: null, id: null, name: '' });
+    } catch (error) {
+      console.error('Error deleting subcategory:', error);
+    }
+  };
+
+  const handleSaveSubcategory = async (subcategoryData) => {
+    try {
+      const dataToSave = {
+        ...subcategoryData,
+        imageUrl: subcategoryImagePreview || subcategoryData.imageUrl
+      };
+      if (editModal.data?.id) {
+        await adminApi.updateShoppingSubcategory(editModal.data.id, dataToSave);
+      } else {
+        await adminApi.createShoppingSubcategory(dataToSave);
+      }
+      loadSubcategories();
+      setEditModal({ isOpen: false, type: null, data: null });
+      setSubcategoryImagePreview('');
+    } catch (error) {
+      console.error('Error saving subcategory:', error);
+    }
+  };
+
   const handleSaveCategory = async (categoryData) => {
     try {
       const dataToSave = {
@@ -418,6 +516,7 @@ export default function ShoppingAdmin() {
     setProductPrimaryPreview(product.imageUrl || '');
     setProductAdditionalPreviews(product.imageUrls || []);
     setSelectedCategory(product.categoryName || '');
+    setSelectedSubcategory(product.subcategoryName || '');
     setDefaultDisplaySequence(product.displaySequence || 0);
     setSizeOptions(product.sizeOptions || []);
     setColorVariants(product.colorVariants || []);
@@ -486,18 +585,31 @@ export default function ShoppingAdmin() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Categories Accordion */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <button
-          onClick={() => setActiveAccordion(activeAccordion === 'categories' ? '' : 'categories')}
-          className="w-full px-6 py-5 flex justify-between items-center hover:bg-gray-50 transition-colors bg-gradient-to-r from-blue-50 to-indigo-50"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">C</span>
-            </div>
-            <div className="text-left">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 py-8">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-2xl shadow-lg">
+            <ShoppingCart className="text-white w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Shopping Admin</h1>
+            <p className="text-gray-600 mt-1">Manage categories, products, and orders</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Categories Accordion */}
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-purple-100">
+            <button
+              onClick={() => setActiveAccordion(activeAccordion === 'categories' ? '' : 'categories')}
+              className="w-full px-6 py-5 flex justify-between items-center hover:bg-purple-50 transition-all duration-300 bg-gradient-to-r from-purple-50 to-indigo-50"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl shadow-md">
+                  <Layers className="text-white w-6 h-6" />
+                </div>
+                <div className="text-left">
               <h2 className="text-xl font-bold text-gray-800">Categories</h2>
               <p className="text-sm text-gray-500">{categories.length} items</p>
             </div>
@@ -540,7 +652,7 @@ export default function ShoppingAdmin() {
               </div>
               <button
                 onClick={handleAddCategory}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-5 py-2.5 rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
               >
                 <Plus size={18} />
                 Add Category
@@ -587,6 +699,121 @@ export default function ShoppingAdmin() {
                         </button>
                         <button
                           onClick={() => handleDeleteCategoryClick(category)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Subcategories Accordion */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <button
+          onClick={() => setActiveAccordion(activeAccordion === 'subcategories' ? '' : 'subcategories')}
+          className="w-full px-6 py-5 flex justify-between items-center hover:bg-gray-50 transition-colors bg-gradient-to-r from-purple-50 to-pink-50"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">S</span>
+            </div>
+            <div className="text-left">
+              <h2 className="text-xl font-bold text-gray-800">Subcategories</h2>
+              <p className="text-sm text-gray-500">{subcategories.length} items</p>
+            </div>
+          </div>
+          {activeAccordion === 'subcategories' ? <ChevronUp size={24} className="text-gray-600" /> : <ChevronDown size={24} className="text-gray-600" />}
+        </button>
+        {activeAccordion === 'subcategories' && (
+          <div className="p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:flex-none min-w-[200px]">
+                  <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search subcategories..."
+                    value={subcategoryFilter.name}
+                    onChange={(e) => setSubcategoryFilter({ ...subcategoryFilter, name: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  />
+                </div>
+                <select
+                  value={subcategoryFilter.category}
+                  onChange={(e) => setSubcategoryFilter({ ...subcategoryFilter, category: e.target.value })}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm flex-1 sm:flex-none min-w-[150px]"
+                >
+                  <option value="">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={subcategoryFilter.status}
+                  onChange={(e) => setSubcategoryFilter({ ...subcategoryFilter, status: e.target.value })}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm flex-1 sm:flex-none min-w-[150px]"
+                >
+                  <option value="">All Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              <button
+                onClick={handleAddSubcategory}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-lg hover:bg-purple-700 transition-colors shadow-md"
+              >
+                <Plus size={18} />
+                Add Subcategory
+              </button>
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                    <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sequence</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {subcategories
+                    .filter(subcategory => {
+                      const matchesName = !subcategoryFilter.name || subcategory.name.toLowerCase().includes(subcategoryFilter.name.toLowerCase());
+                      const matchesCategory = !subcategoryFilter.category || subcategory.categoryId === subcategoryFilter.category;
+                      const matchesStatus = !subcategoryFilter.status || subcategory.status === subcategoryFilter.status;
+                      return matchesName && matchesCategory && matchesStatus;
+                    })
+                    .map((subcategory) => (
+                    <tr key={subcategory.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">{subcategory.name}</td>
+                      <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-600">{subcategory.categoryName}</td>
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">{subcategory.displaySequence || 0}</td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          subcategory.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {subcategory.status}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 flex gap-2">
+                        <button
+                          onClick={() => handleEditSubcategory(subcategory)}
+                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSubcategory(subcategory)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
                         >
@@ -909,18 +1136,23 @@ export default function ShoppingAdmin() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className={`p-6 text-white ${
-              editModal.type === 'category' 
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600' 
+              editModal.type === 'category'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600'
+                : editModal.type === 'subcategory'
+                ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600'
                 : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600'
             }`}>
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-2xl font-bold">
                     {editModal.type === 'category' ? (editModal.data ? 'Edit Category' : 'Add Category') :
+                     editModal.type === 'subcategory' ? (editModal.data ? 'Edit Subcategory' : 'Add Subcategory') :
                      editModal.type === 'product' ? (editModal.data ? 'Edit Product' : 'Add Product') : ''}
                   </h3>
                   <p className="text-white/80 text-sm mt-1">
-                    {editModal.type === 'category' ? 'Manage category details' : 'Manage product information'}
+                    {editModal.type === 'category' ? 'Manage category details' :
+                     editModal.type === 'subcategory' ? 'Manage subcategory details' :
+                     'Manage product information'}
                   </p>
                 </div>
                 <button
@@ -1041,6 +1273,151 @@ export default function ShoppingAdmin() {
                   </div>
                 </form>
               )}
+              {editModal.type === 'subcategory' && (
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const selectedCategory = categories.find(c => c.id === selectedCategoryForSubcategory);
+                  handleSaveSubcategory({
+                    categoryId: selectedCategoryForSubcategory,
+                    categoryName: selectedCategory?.name || '',
+                    name: e.target.name.value,
+                    description: e.target.description.value,
+                    displaySequence: parseInt(e.target.displaySequence.value) || 0,
+                    status: e.target.status.value
+                  });
+                }}>
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">
+                      <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <div className="bg-purple-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">C</span>
+                        </div>
+                        Parent Category *
+                      </label>
+                      <select
+                        name="category"
+                        value={selectedCategoryForSubcategory}
+                        onChange={(e) => {
+                          setSelectedCategoryForSubcategory(e.target.value);
+                          adminApi.getNextSubcategorySequence(e.target.value).then(res => {
+                            setDefaultSubcategorySequence(res.data.nextSequence);
+                          }).catch(() => setDefaultSubcategorySequence(0));
+                        }}
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all shadow-sm bg-white"
+                        required
+                      >
+                        <option value="">Select a category</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl p-5 border border-pink-100">
+                      <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <div className="bg-pink-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">S</span>
+                        </div>
+                        Subcategory Name *
+                      </label>
+                      <input name="name" defaultValue={editModal.data?.name} className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all shadow-sm bg-white" placeholder="Enter subcategory name" required />
+                    </div>
+                    <div className="bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl p-5 border border-rose-100">
+                      <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <div className="bg-rose-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">D</span>
+                        </div>
+                        Description
+                      </label>
+                      <textarea name="description" defaultValue={editModal.data?.description} className="w-full px-4 py-3 border-2 border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all shadow-sm resize-none bg-white" rows="3" placeholder="Enter subcategory description" />
+                    </div>
+                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100">
+                      <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <div className="bg-orange-600 rounded-lg p-1">
+                          <span className="text-white text-xs font-bold">I</span>
+                        </div>
+                        Subcategory Image
+                      </label>
+                      <div
+                        className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                          subcategoryImageDragging
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-orange-300 hover:border-orange-400 hover:bg-orange-50/50'
+                        }`}
+                        onDrop={handleSubcategoryImageDrop}
+                        onDragOver={handleSubcategoryImageDragOver}
+                        onDragLeave={handleSubcategoryImageDragLeave}
+                        onClick={() => document.getElementById('subcategoryImageInput').click()}
+                      >
+                        <input
+                          id="subcategoryImageInput"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSubcategoryImageSelect}
+                          className="hidden"
+                        />
+                        {subcategoryImagePreview ? (
+                          <div className="relative">
+                            <img src={subcategoryImagePreview} alt="Preview" className="max-h-48 mx-auto rounded-lg shadow-md" />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSubcategoryImagePreview('');
+                              }}
+                              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                              <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <p className="text-sm text-gray-600 font-medium">Drag & drop an image here</p>
+                            <p className="text-xs text-gray-500">or click to browse</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-5 border border-amber-100">
+                        <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                          <div className="bg-amber-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">S</span>
+                          </div>
+                          Display Sequence *
+                        </label>
+                        <input
+                          name="displaySequence"
+                          type="number"
+                          min="0"
+                          defaultValue={editModal.data?.displaySequence !== undefined ? editModal.data.displaySequence : defaultSubcategorySequence}
+                          className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all shadow-sm bg-white"
+                          required
+                        />
+                      </div>
+                      <div className="bg-gradient-to-r from-yellow-50 to-lime-50 rounded-xl p-5 border border-yellow-100">
+                        <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                          <div className="bg-yellow-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">A</span>
+                          </div>
+                          Status
+                        </label>
+                        <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-yellow-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all shadow-sm bg-white">
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button type="submit" className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white py-4 rounded-xl hover:from-purple-700 hover:via-pink-700 hover:to-rose-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                      Save Subcategory
+                    </button>
+                  </div>
+                </form>
+              )}
               {editModal.type === 'product' && (
                 <form onSubmit={async (e) => {
                   e.preventDefault();
@@ -1101,6 +1478,9 @@ export default function ShoppingAdmin() {
                   
                   const imageUrlsArray = newAllImages.length > 0 ? newAllImages : (editModal.data?.imageUrls || []);
                   
+                  const selectedCategoryObj = categories.find(c => c.name === categoryName);
+                  const selectedSubcategoryObj = subcategories.find(s => s.name === selectedSubcategory);
+
                   handleSaveProduct({
                     name: e.target.name.value,
                     description: e.target.description.value,
@@ -1113,7 +1493,10 @@ export default function ShoppingAdmin() {
                     highlights: highlightsArray,
                     offerPercentage: offerPercentage,
                     status: e.target.status.value,
+                    categoryId: selectedCategoryObj?.id || '',
                     categoryName: categoryName,
+                    subcategoryId: selectedSubcategoryObj?.id || '',
+                    subcategoryName: selectedSubcategory || '',
                     displaySequence: parseInt(e.target.displaySequence.value) || 0,
                     sizeOptions: sizeOptions,
                     colorVariants: colorVariants
@@ -1251,6 +1634,7 @@ export default function ShoppingAdmin() {
                           value={selectedCategory}
                           onChange={async (e) => {
                             setSelectedCategory(e.target.value);
+                            setSelectedSubcategory('');
                             setProductValidationErrors({...productValidationErrors, category: ''});
                             if (e.target.value) {
                               try {
@@ -1270,6 +1654,29 @@ export default function ShoppingAdmin() {
                           ))}
                         </select>
                         <span className="text-xs text-red-500 mt-1 block">{productValidationErrors.category || ''}</span>
+                      </div>
+                      <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-5 border border-violet-100">
+                        <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                          <div className="bg-violet-600 rounded-lg p-1">
+                            <span className="text-white text-xs font-bold">S</span>
+                          </div>
+                          Subcategory
+                        </label>
+                        <select
+                          name="subcategorySelect"
+                          value={selectedSubcategory}
+                          onChange={(e) => {
+                            setSelectedSubcategory(e.target.value);
+                          }}
+                          className="w-full px-4 py-3 border-2 border-violet-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all shadow-sm bg-white"
+                        >
+                          <option value="">Select Subcategory (Optional)</option>
+                          {subcategories
+                            .filter(sub => sub.categoryId === categories.find(c => c.name === selectedCategory)?.id)
+                            .map((sub) => (
+                              <option key={sub.id} value={sub.name}>{sub.name}</option>
+                            ))}
+                        </select>
                       </div>
                     </div>
                     <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-5 border border-violet-100">
@@ -1916,6 +2323,8 @@ export default function ShoppingAdmin() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

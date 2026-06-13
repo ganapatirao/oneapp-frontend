@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Plane, Film, Plus, MapPin, Clock, DollarSign } from 'lucide-react';
+import { Calendar, Plane, Film, Plus, MapPin, Clock, DollarSign, Sparkles, ChevronDown, ChevronUp, Search, SlidersHorizontal, Star, Users } from 'lucide-react';
 import { bookingApi } from '../services/api';
 import { indiaLocations } from '../data/indiaLocations';
 
@@ -19,6 +19,10 @@ export default function Booking({ userRole }) {
     quantity: 1,
     bookingDate: ''
   });
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [expandedSection, setExpandedSection] = useState(null);
 
   useEffect(() => {
     loadTransports();
@@ -103,6 +107,10 @@ export default function Booking({ userRole }) {
     setSelectedType(type);
   };
 
+  const formatPrice = (price) => {
+    return `$${price.toFixed(2)}`;
+  };
+
   const filteredTransports = selectedType === 'All'
     ? transports
     : transports.filter(t => t.type === selectedType);
@@ -114,40 +122,104 @@ export default function Booking({ userRole }) {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-gray-800 mb-8">Booking</h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-6">Booking</h1>
+
+        {/* Search and Filter Bar */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search transports, packages, movies..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl"
+            >
+              <SlidersHorizontal size={18} />
+              <span>Filters</span>
+            </button>
+          </div>
+          
+          {/* Collapsible Filter Panel */}
+          {showFilters && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">Price Range</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={priceRange.min}
+                      onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={priceRange.max}
+                      onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setPriceRange({ min: '', max: '' });
+                    }}
+                    className="w-full px-4 py-2 border border-blue-300 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition-colors text-sm"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Tabs */}
-        <div className="flex space-x-4 mb-8 border-b">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           <button
             onClick={() => setActiveTab('transport')}
-            className={`px-6 py-3 font-medium transition-colors ${
+            className={`flex-shrink-0 px-5 py-2.5 rounded-full font-semibold transition-all duration-200 text-sm border-2 flex items-center gap-2 ${
               activeTab === 'transport'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-blue-500 shadow-lg'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
             }`}
           >
+            <Calendar size={16} />
             Transport
           </button>
           <button
             onClick={() => setActiveTab('package')}
-            className={`px-6 py-3 font-medium transition-colors ${
+            className={`flex-shrink-0 px-5 py-2.5 rounded-full font-semibold transition-all duration-200 text-sm border-2 flex items-center gap-2 ${
               activeTab === 'package'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white border-pink-500 shadow-lg'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-pink-300 hover:bg-pink-50'
             }`}
           >
+            <Plane size={16} />
             Travel Packages
           </button>
           <button
             onClick={() => setActiveTab('movie')}
-            className={`px-6 py-3 font-medium transition-colors ${
+            className={`flex-shrink-0 px-5 py-2.5 rounded-full font-semibold transition-all duration-200 text-sm border-2 flex items-center gap-2 ${
               activeTab === 'movie'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-gradient-to-r from-red-500 to-orange-600 text-white border-red-500 shadow-lg'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-red-300 hover:bg-red-50'
             }`}
           >
+            <Film size={16} />
             Movies
           </button>
         </div>
@@ -156,14 +228,14 @@ export default function Booking({ userRole }) {
         {activeTab === 'transport' && (
           <div>
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Transport Type</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Transport Type</label>
                   <select
                     value={selectedType}
                     onChange={(e) => handleTypeChange(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-white"
                   >
                     <option value="All">All Types</option>
                     <option value="Train">Train</option>
@@ -174,11 +246,11 @@ export default function Booking({ userRole }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Source</label>
                   <select
                     value={selectedSource}
                     onChange={(e) => setSelectedSource(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-white"
                   >
                     <option value="">All Locations</option>
                     {indiaLocations.map((loc) => (
@@ -187,11 +259,11 @@ export default function Booking({ userRole }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Destination</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Destination</label>
                   <select
                     value={selectedDestination}
                     onChange={(e) => setSelectedDestination(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-white"
                   >
                     <option value="">All Locations</option>
                     {indiaLocations.map((loc) => (
@@ -203,30 +275,32 @@ export default function Booking({ userRole }) {
             </div>
 
             {/* Transport Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTransportsByRoute.map((transport) => (
-                <div key={transport.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6">
-                  <div className="flex items-center mb-4">
-                    <Calendar size={32} className="text-blue-600" />
+                <div key={transport.id} className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors p-4">
+                  <div className="flex items-center mb-3">
+                    <div className="bg-gray-100 p-2 rounded-lg">
+                      <Calendar size={18} className="text-gray-600" />
+                    </div>
                     <div className="ml-3">
-                      <h3 className="font-semibold text-gray-800">{transport.name}</h3>
-                      <p className="text-sm text-gray-600">{transport.type}</p>
+                      <h3 className="font-medium text-gray-900 text-sm">{transport.name}</h3>
+                      <p className="text-xs text-gray-500">{transport.type}</p>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">{transport.source}</span>
-                    <span className="text-gray-400">→</span>
-                    <span className="text-gray-600">{transport.destination}</span>
+                  <div className="flex justify-between items-center mb-2 bg-gray-50 rounded-lg p-2">
+                    <span className="text-gray-700 text-xs">{transport.source}</span>
+                    <span className="text-gray-400 text-xs">→</span>
+                    <span className="text-gray-700 text-xs">{transport.destination}</span>
                   </div>
-                  <div className="flex items-center mb-4">
-                    <Clock size={16} className="text-gray-500" />
-                    <span className="ml-2 text-sm text-gray-600">{transport.duration}</span>
+                  <div className="flex items-center mb-3">
+                    <Clock size={12} className="text-gray-400" />
+                    <span className="ml-2 text-xs text-gray-500">{transport.duration}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <p className="text-lg font-bold text-blue-600">${transport.price.toFixed(2)}</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatPrice(transport.price)}</p>
                     <button
                       onClick={() => handleBook(transport, 'transport')}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-gray-800 transition-colors"
                     >
                       Book
                     </button>
@@ -239,30 +313,27 @@ export default function Booking({ userRole }) {
 
         {/* Travel Packages Tab */}
         {activeTab === 'package' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {packages.map((pkg) => (
-              <div key={pkg.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                <img src={pkg.imageUrl} alt={pkg.name} className="w-full h-48 object-cover" />
-                <div className="p-6">
-                  <div className="flex items-center mb-3">
-                    <Plane size={24} className="text-purple-600" />
-                    <h3 className="font-semibold text-gray-800 ml-2">{pkg.name}</h3>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{pkg.description}</p>
+              <div key={pkg.id} className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-hidden">
+                <div className="aspect-video bg-gray-100">
+                  <img src={pkg.imageUrl} alt={pkg.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="p-4">
                   <div className="flex items-center mb-2">
-                    <Clock size={16} className="text-gray-500" />
-                    <span className="ml-2 text-sm text-gray-600">{pkg.duration}</span>
+                    <Plane size={16} className="text-gray-400" />
+                    <h3 className="font-medium text-gray-900 ml-2 text-sm line-clamp-1">{pkg.name}</h3>
                   </div>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {pkg.destinations.map((dest, index) => (
-                      <span key={index} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">{dest}</span>
-                    ))}
+                  <p className="text-xs text-gray-500 mb-2 line-clamp-2">{pkg.description}</p>
+                  <div className="flex items-center mb-2">
+                    <Clock size={12} className="text-gray-400" />
+                    <span className="ml-2 text-xs text-gray-500">{pkg.duration}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <p className="text-lg font-bold text-purple-600">${pkg.price.toFixed(2)}</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatPrice(pkg.price)}</p>
                     <button
                       onClick={() => handleBook(pkg, 'package')}
-                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                      className="bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-gray-800 transition-colors"
                     >
                       Book
                     </button>
@@ -275,25 +346,26 @@ export default function Booking({ userRole }) {
 
         {/* Movies Tab */}
         {activeTab === 'movie' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {movies.map((movie) => (
-              <div key={movie.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                <img src={movie.imageUrl} alt={movie.title} className="w-full h-64 object-cover" />
-                <div className="p-4">
-                  <div className="flex items-center mb-2">
-                    <Film size={20} className="text-red-600" />
-                    <h3 className="font-semibold text-gray-800 ml-2">{movie.title}</h3>
+              <div key={movie.id} className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-hidden">
+                <div className="aspect-[2/3] bg-gray-100">
+                  <img src={movie.imageUrl} alt={movie.title} className="w-full h-full object-cover" />
+                </div>
+                <div className="p-3">
+                  <div className="flex items-center mb-1">
+                    <Film size={14} className="text-gray-400" />
+                    <h3 className="font-medium text-gray-900 ml-2 text-sm line-clamp-2">{movie.title}</h3>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{movie.genre} • {movie.language}</p>
-                  <p className="text-sm text-gray-600 mb-2">{movie.duration} min</p>
+                  <p className="text-xs text-gray-500 mb-1">{movie.genre} • {movie.language}</p>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
-                      <span className="text-yellow-500">★</span>
-                      <span className="ml-1 text-sm text-gray-600">{movie.rating}</span>
+                      <span className="text-yellow-500 text-xs">★</span>
+                      <span className="ml-1 text-xs text-gray-600">{movie.rating}</span>
                     </div>
                     <button
                       onClick={() => handleBook(movie, 'movie')}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                      className="bg-gray-900 text-white px-3 py-1 rounded-lg text-xs hover:bg-gray-800 transition-colors"
                     >
                       Book
                     </button>

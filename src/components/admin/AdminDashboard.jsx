@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ShoppingBag, Briefcase, Calendar, Film, Package, DollarSign, TrendingUp, Plus, Trash2, Edit, Power, PowerOff, X, RefreshCw, MapPin } from 'lucide-react';
-import { adminApi, shoppingApi, advertisingApi, recruitmentApi, bookingApi } from '../../services/api';
+import { Users, ShoppingBag, Briefcase, Calendar, Film, Package, DollarSign, TrendingUp, Plus, Trash2, Edit, Power, PowerOff, X, RefreshCw, MapPin, Sparkles, ShieldCheck, BarChart3, Settings, Layers, Zap, Search, Upload, Image as ImageIcon } from 'lucide-react';
+import { adminApi, shoppingApi, advertisingApi, recruitmentApi, bookingApi, API_BASE_URL } from '../../services/api';
 import ShoppingAdmin from './ShoppingAdmin';
 import SubcategoryFilter from '../SubcategoryFilter';
 
@@ -27,6 +27,12 @@ export default function AdminDashboard() {
   const [packagePreview, setPackagePreview] = useState('');
   const [moviePreview, setMoviePreview] = useState('');
   const [validationSettings, setValidationSettings] = useState({});
+
+  // Drag and drop states
+  const [isDraggingPrimary, setIsDraggingPrimary] = useState(false);
+  const [isDraggingAdditional, setIsDraggingAdditional] = useState(false);
+  const [isDraggingPackage, setIsDraggingPackage] = useState(false);
+  const [isDraggingMovie, setIsDraggingMovie] = useState(false);
 
   // Filter states
   const [adSearchTerm, setAdSearchTerm] = useState('');
@@ -58,6 +64,10 @@ export default function AdminDashboard() {
   });
 
   const [adCategories, setAdCategories] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [conditions, setConditions] = useState([]);
+  const [selectedState, setSelectedState] = useState('');
 
   const fileToDataUrl = (file) => new Promise((resolve, reject) => {
     if (!file) {
@@ -71,6 +81,90 @@ export default function AdminDashboard() {
   });
 
   const filesToDataUrls = async (fileList) => Promise.all(Array.from(fileList || []).map(fileToDataUrl));
+
+  // Drag and drop handlers
+  const handlePrimaryDragOver = (e) => {
+    e.preventDefault();
+    setIsDraggingPrimary(true);
+  };
+
+  const handlePrimaryDragLeave = (e) => {
+    e.preventDefault();
+    setIsDraggingPrimary(false);
+  };
+
+  const handlePrimaryDrop = async (e) => {
+    e.preventDefault();
+    setIsDraggingPrimary(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const preview = await fileToDataUrl(file);
+      setAdPrimaryPreview(preview);
+    }
+  };
+
+  const handleAdditionalDragOver = (e) => {
+    e.preventDefault();
+    setIsDraggingAdditional(true);
+  };
+
+  const handleAdditionalDragLeave = (e) => {
+    e.preventDefault();
+    setIsDraggingAdditional(false);
+  };
+
+  const handleAdditionalDrop = async (e) => {
+    e.preventDefault();
+    setIsDraggingAdditional(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+      if (imageFiles.length > 0) {
+        const previews = await filesToDataUrls(imageFiles);
+        setAdAdditionalPreviews([...adAdditionalPreviews, ...previews]);
+      }
+    }
+  };
+
+  const handlePackageDragOver = (e) => {
+    e.preventDefault();
+    setIsDraggingPackage(true);
+  };
+
+  const handlePackageDragLeave = (e) => {
+    e.preventDefault();
+    setIsDraggingPackage(false);
+  };
+
+  const handlePackageDrop = async (e) => {
+    e.preventDefault();
+    setIsDraggingPackage(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const preview = await fileToDataUrl(file);
+      setPackagePreview(preview);
+    }
+  };
+
+  const handleMovieDragOver = (e) => {
+    e.preventDefault();
+    setIsDraggingMovie(true);
+  };
+
+  const handleMovieDragLeave = (e) => {
+    e.preventDefault();
+    setIsDraggingMovie(false);
+  };
+
+  const handleMovieDrop = async (e) => {
+    e.preventDefault();
+    setIsDraggingMovie(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const preview = await fileToDataUrl(file);
+      setMoviePreview(preview);
+    }
+  };
 
   useEffect(() => {
     const role = localStorage.getItem('role');
@@ -89,11 +183,13 @@ export default function AdminDashboard() {
     loadMovies();
     loadAdCategories();
     loadValidationSettings();
+    loadStates();
+    loadConditions();
   }, [navigate]);
 
   const loadValidationSettings = async () => {
     try {
-      const response = await adminApi.getValidationSettings('Product');
+      const response = await adminApi.getValidationSettings('Advertisement');
       const settingsDict = {};
       response.data.forEach(setting => {
         settingsDict[setting.fieldName] = setting;
@@ -217,12 +313,51 @@ export default function AdminDashboard() {
 
   const loadAdCategories = async () => {
     try {
-      const response = await adminApi.getAdCategories();
+      const response = await advertisingApi.getAdCategories();
       if (response.data && response.data.length > 0) {
         setAdCategories(response.data);
       }
     } catch (error) {
       console.error('Error loading ad categories:', error);
+    }
+  };
+
+  const loadStates = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/advertising/states`);
+      if (response.ok) {
+        const data = await response.json();
+        setStates(data);
+      }
+    } catch (error) {
+      console.error('Error loading states:', error);
+    }
+  };
+
+  const loadCities = async (stateCode) => {
+    try {
+      const url = stateCode 
+        ? `${API_BASE_URL}/advertising/cities?stateCode=${stateCode}`
+        : `${API_BASE_URL}/advertising/cities`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setCities(data);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
+
+  const loadConditions = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/advertising/conditions`);
+      if (response.ok) {
+        const data = await response.json();
+        setConditions(data);
+      }
+    } catch (error) {
+      console.error('Error loading conditions:', error);
     }
   };
 
@@ -310,69 +445,23 @@ export default function AdminDashboard() {
   const handleSaveAd = async (e) => {
     e.preventDefault();
 
-    // Validation
-    if (!adFormData.title.trim()) {
-      alert('Please enter a title');
-      return;
+    // Dynamic validation using validationSettings
+    const allErrors = {};
+    const fieldsToValidate = ['title', 'description', 'price', 'categoryName', 'location', 'city', 'condition', 'sellerPhone', 'sellerEmail'];
+    
+    for (const field of fieldsToValidate) {
+      const fieldValue = field === 'sellerPhone' ? adFormData.phone : 
+                         field === 'sellerEmail' ? adFormData.email : 
+                         adFormData[field];
+      const validation = validateField(field, fieldValue);
+      if (!validation.isValid) {
+        allErrors[field] = validation.errors;
+      }
     }
-    if (adFormData.title.length > 100) {
-      alert('Title must be less than 100 characters');
-      return;
-    }
-    if (!adFormData.description.trim()) {
-      alert('Please enter a description');
-      return;
-    }
-    if (adFormData.description.length > 2000) {
-      alert('Description must be less than 2000 characters');
-      return;
-    }
-    if (!adFormData.price || parseFloat(adFormData.price) <= 0) {
-      alert('Please enter a valid price');
-      return;
-    }
-    if (!adFormData.categoryName) {
-      alert('Please select a category');
-      return;
-    }
-    if (adFormData.categoryName === 'Other' && !adFormData.customCategory.trim()) {
-      alert('Please enter a custom category name');
-      return;
-    }
-    if (adFormData.customCategory && adFormData.customCategory.length > 50) {
-      alert('Custom category name must be less than 50 characters');
-      return;
-    }
-    if (!adFormData.location.trim()) {
-      alert('Please enter a location');
-      return;
-    }
-    if (adFormData.location.length > 100) {
-      alert('Location must be less than 100 characters');
-      return;
-    }
-    if (!adFormData.city) {
-      alert('Please select a city');
-      return;
-    }
-    if (!adFormData.condition) {
-      alert('Please select a condition');
-      return;
-    }
-    if (!adFormData.phone.trim()) {
-      alert('Please enter a phone number');
-      return;
-    }
-    if (!/^\+?[\d\s-]{10,}$/.test(adFormData.phone)) {
-      alert('Please enter a valid phone number (min 10 digits)');
-      return;
-    }
-    if (!adFormData.email.trim()) {
-      alert('Please enter an email');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adFormData.email)) {
-      alert('Please enter a valid email address');
+    
+    if (Object.keys(allErrors).length > 0) {
+      const errorMessages = Object.values(allErrors).flat();
+      alert('Validation errors:\n' + errorMessages.join('\n'));
       return;
     }
     try {
@@ -689,20 +778,29 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-gray-800 mb-8">Admin Dashboard</h1>
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-2xl shadow-lg">
+            <ShieldCheck className="text-white w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Admin Dashboard</h1>
+            <p className="text-gray-600 mt-1">Manage your platform efficiently</p>
+          </div>
+        </div>
 
         {/* Tabs */}
-        <div className="flex space-x-4 mb-8 border-b overflow-x-auto">
+        <div className="flex space-x-2 mb-8 border-b border-purple-200 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {['overview', 'shopping', 'ads', 'jobs', 'transport', 'packages', 'movies', 'users'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 font-medium transition-colors whitespace-nowrap ${
+              className={`px-5 py-2.5 rounded-full font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${
                 activeTab === tab
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300 hover:bg-purple-50'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -894,9 +992,12 @@ export default function AdminDashboard() {
 
         {/* Ads Tab */}
         {activeTab === 'ads' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Advertisements ({ads.length})</h2>
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-purple-100">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Advertisements</h2>
+                <p className="text-gray-500 mt-1">Manage all advertisements ({ads.length})</p>
+              </div>
               <button
                 onClick={() => {
                   setAdFormData({
@@ -920,53 +1021,47 @@ export default function AdminDashboard() {
                   });
                   setAdPrimaryPreview('');
                   setAdAdditionalPreviews([]);
+                  setSelectedState('');
                   setEditModal({ isOpen: true, type: 'ad', data: null });
                 }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="relative group bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center"
               >
-                <Plus size={16} />
-                Add Ad
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></div>
+                <Plus size={20} className="mr-2 relative z-10" />
+                <span className="relative z-10">Add Ad</span>
               </button>
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 mb-6 border border-purple-100">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="relative">
                   <input
                     type="text"
                     placeholder="Search ads..."
                     value={adSearchTerm || ''}
                     onChange={(e) => setAdSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all"
                   />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400" size={18} />
                 </div>
                 <div>
                   <select
                     value={adCategoryFilter || 'All'}
                     onChange={(e) => setAdCategoryFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all"
                   >
                     <option value="All">All Categories</option>
-                    <option value="Jobs">Jobs</option>
-                    <option value="Vehicles">Vehicles</option>
-                    <option value="Real Estate">Real Estate</option>
-                    <option value="Mobiles">Mobiles</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Fashion">Fashion</option>
-                    <option value="Home & Living">Home & Living</option>
-                    <option value="Services">Services</option>
-                    <option value="Pets">Pets</option>
-                    <option value="Matrimonial">Matrimonial</option>
-                    <option value="Community">Community</option>
-                    <option value="Business">Business</option>
+                    {adCategories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>{cat.emoji} {cat.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
                   <select
                     value={adStatusFilter || 'All'}
                     onChange={(e) => setAdStatusFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all"
                   >
                     <option value="All">All Status</option>
                     <option value="Active">Active</option>
@@ -978,7 +1073,7 @@ export default function AdminDashboard() {
                   <select
                     value={adSortBy || 'newest'}
                     onChange={(e) => setAdSortBy(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all"
                   >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
@@ -988,40 +1083,40 @@ export default function AdminDashboard() {
                   </select>
                 </div>
               </div>
-              <div className="flex gap-4 mt-3">
-                <label className="flex items-center cursor-pointer">
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer bg-white px-4 py-2 rounded-xl border-2 border-purple-200 hover:border-purple-400 transition-all">
                   <input
                     type="checkbox"
                     checked={adFeaturedOnly || false}
                     onChange={(e) => setAdFeaturedOnly(e.target.checked)}
-                    className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
+                    className="w-5 h-5 text-purple-500 rounded focus:ring-purple-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Featured Only</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">Featured Only</span>
                 </label>
-                <label className="flex items-center cursor-pointer">
+                <label className="flex items-center cursor-pointer bg-white px-4 py-2 rounded-xl border-2 border-purple-200 hover:border-purple-400 transition-all">
                   <input
                     type="checkbox"
                     checked={adUrgentOnly || false}
                     onChange={(e) => setAdUrgentOnly(e.target.checked)}
-                    className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
+                    className="w-5 h-5 text-red-500 rounded focus:ring-red-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Urgent Only</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">Urgent Only</span>
                 </label>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-purple-100">
               <table className="min-w-full">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Title</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Category</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Seller</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Location</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Views</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                  <tr className="bg-gradient-to-r from-purple-50 to-indigo-50">
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Title</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Category</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Seller</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Price</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Location</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Status</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Views</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-purple-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1035,48 +1130,48 @@ export default function AdminDashboard() {
                       return matchSearch && matchCategory && matchStatus && matchFeatured && matchUrgent;
                     })
                     .sort((a, b) => {
-                      if (adSortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-                      if (adSortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+                      if (adSortBy === 'newest') return new Date(b.postedDate || b.createdAt) - new Date(a.postedDate || a.createdAt);
+                      if (adSortBy === 'oldest') return new Date(a.postedDate || a.createdAt) - new Date(b.postedDate || b.createdAt);
                       if (adSortBy === 'price-low') return a.price - b.price;
                       if (adSortBy === 'price-high') return b.price - a.price;
                       if (adSortBy === 'popular') return (b.views || 0) - (a.views || 0);
                       return 0;
                     })
                     .map((ad) => (
-                    <tr key={ad.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-800 max-w-xs truncate">{ad.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{ad.categoryName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{ad.sellerName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">₹{ad.price.toLocaleString('en-IN')}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{ad.location}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          ad.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                          ad.status === 'Inactive' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
+                    <tr key={ad.id} className="hover:bg-purple-50 transition-colors border-b border-purple-100">
+                      <td className="px-4 py-4 text-sm text-gray-800 max-w-xs truncate font-medium">{ad.title}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{ad.categoryName}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{ad.sellerEmail || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm font-bold text-purple-600">₹{ad.price.toLocaleString('en-IN')}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{ad.location}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          ad.status === 'Active' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white shadow-md' : 
+                          ad.status === 'Inactive' ? 'bg-gradient-to-r from-red-400 to-red-500 text-white shadow-md' :
+                          'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-md'
                         }`}>
                           {ad.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{ad.views || 0}</td>
-                      <td className="px-4 py-3 flex gap-2">
+                      <td className="px-4 py-4 text-sm text-gray-800 font-medium">{ad.views || 0}</td>
+                      <td className="px-4 py-4 flex gap-2">
                         <button
                           onClick={() => handleEditAd(ad)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
                           title="Edit"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleUpdateAdStatus(ad.id, ad.status === 'Active' ? 'Inactive' : 'Active')}
-                          className={ad.status === 'Active' ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800'}
+                          className={`p-2 rounded-lg transition-all ${ad.status === 'Active' ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                           title={ad.status === 'Active' ? 'Deactivate' : 'Activate'}
                         >
                           {ad.status === 'Active' ? <PowerOff size={16} /> : <Power size={16} />}
                         </button>
                         <button
                           onClick={() => handleDeleteAd(ad.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -1092,68 +1187,72 @@ export default function AdminDashboard() {
 
         {/* Jobs Tab */}
         {activeTab === 'jobs' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-blue-100">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-bold text-gray-800">Jobs Management ({jobs.length})</h2>
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Jobs Management</h2>
+                <p className="text-gray-500 mt-1">Manage all job postings ({jobs.length})</p>
+              </div>
               <button
                 onClick={() => setEditModal({ isOpen: true, type: 'job', data: null })}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
+                className="relative group bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center"
               >
-                <Plus size={20} />
-                Add Job
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></div>
+                <Plus size={20} className="mr-2 relative z-10" />
+                <span className="relative z-10">Add Job</span>
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-blue-100">
               <table className="min-w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-blue-50 to-purple-50">
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Job Title</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Company</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Location</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Salary</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Type</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Actions</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-blue-800">Job Title</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-blue-800">Company</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-blue-800">Location</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-blue-800">Salary</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-blue-800">Type</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-blue-800">Status</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-blue-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {jobs.map((job) => (
-                    <tr key={job.id} className="hover:bg-blue-50 transition-colors border-b border-gray-100">
-                      <td className="px-6 py-4">
+                    <tr key={job.id} className="hover:bg-blue-50 transition-colors border-b border-blue-100">
+                      <td className="px-4 py-4">
                         <div className="font-semibold text-gray-800">{job.title}</div>
                         <div className="text-sm text-gray-500">{job.experience || 'N/A'}</div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{job.company}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{job.location}</td>
-                      <td className="px-6 py-4 text-sm font-semibold text-green-600">{job.salary}</td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">{job.type}</span>
+                      <td className="px-4 py-4 text-sm text-gray-800">{job.company}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{job.location}</td>
+                      <td className="px-4 py-4 text-sm font-bold text-green-600">{job.salary}</td>
+                      <td className="px-4 py-4">
+                        <span className="text-xs bg-gradient-to-r from-blue-400 to-blue-500 text-white px-3 py-1 rounded-full font-medium shadow-md">{job.type}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          job.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      <td className="px-4 py-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          job.status === 'Active' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white shadow-md' : 'bg-gradient-to-r from-red-400 to-red-500 text-white shadow-md'
                         }`}>
                           {job.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 flex gap-2">
+                      <td className="px-4 py-4 flex gap-2">
                         <button
                           onClick={() => handleEditJob(job)}
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
                           title="Edit"
                         >
-                          <Edit size={18} />
+                          <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleUpdateJobStatus(job.id, job.status === 'Active' ? 'Inactive' : 'Active')}
-                          className={`p-2 rounded-lg transition-colors ${job.status === 'Active' ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
+                          className={`p-2 rounded-lg transition-all ${job.status === 'Active' ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                           title={job.status === 'Active' ? 'Deactivate' : 'Activate'}
                         >
                           {job.status === 'Active' ? <PowerOff size={16} /> : <Power size={16} />}
                         </button>
                         <button
                           onClick={() => handleDeleteJob(job.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -1169,59 +1268,69 @@ export default function AdminDashboard() {
 
         {/* Transport Tab */}
         {activeTab === 'transport' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Transports ({transports.length})</h2>
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-green-100">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Transport Management</h2>
+                <p className="text-gray-500 mt-1">Manage all transport services ({transports.length})</p>
+              </div>
               <button
                 onClick={() => setEditModal({ isOpen: true, type: 'transport', data: null })}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="relative group bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:from-green-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center"
               >
-                <Plus size={16} />
-                Add Transport
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></div>
+                <Plus size={20} className="mr-2 relative z-10" />
+                <span className="relative z-10">Add Transport</span>
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-green-100">
               <table className="min-w-full">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Type</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Route</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                  <tr className="bg-gradient-to-r from-green-50 to-teal-50">
+                    <th className="px-4 py-4 text-left text-sm font-bold text-green-800">Name</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-green-800">Type</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-green-800">Route</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-green-800">Price</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-green-800">Duration</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-green-800">Status</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-green-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transports.map((transport) => (
-                    <tr key={transport.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-800">{transport.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{transport.type}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{transport.source} → {transport.destination}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          transport.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    <tr key={transport.id} className="hover:bg-green-50 transition-colors border-b border-green-100">
+                      <td className="px-4 py-4 text-sm text-gray-800 font-medium">{transport.name}</td>
+                      <td className="px-4 py-4">
+                        <span className="text-xs bg-gradient-to-r from-green-400 to-teal-400 text-white px-3 py-1 rounded-full font-medium shadow-md">{transport.type}</span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{transport.source} → {transport.destination}</td>
+                      <td className="px-4 py-4 text-sm font-bold text-green-600">₹{transport.price?.toLocaleString('en-IN') || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{transport.duration || 'N/A'}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          transport.status === 'Active' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white shadow-md' : 'bg-gradient-to-r from-red-400 to-red-500 text-white shadow-md'
                         }`}>
                           {transport.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 flex gap-2">
+                      <td className="px-4 py-4 flex gap-2">
                         <button
                           onClick={() => handleEditTransport(transport)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-all"
                           title="Edit"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleUpdateTransportStatus(transport.id, transport.status === 'Active' ? 'Inactive' : 'Active')}
-                          className={transport.status === 'Active' ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800'}
+                          className={`p-2 rounded-lg transition-all ${transport.status === 'Active' ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                           title={transport.status === 'Active' ? 'Deactivate' : 'Activate'}
                         >
                           {transport.status === 'Active' ? <PowerOff size={16} /> : <Power size={16} />}
                         </button>
                         <button
                           onClick={() => handleDeleteTransport(transport.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -1237,62 +1346,66 @@ export default function AdminDashboard() {
 
         {/* Packages Tab */}
         {activeTab === 'packages' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Travel Packages ({packages.length})</h2>
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-orange-100">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">Travel Packages</h2>
+                <p className="text-gray-500 mt-1">Manage all travel packages ({packages.length})</p>
+              </div>
               <button
                 onClick={() => {
                   setPackagePreview('');
                   setEditModal({ isOpen: true, type: 'package', data: null });
                 }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="relative group bg-gradient-to-r from-orange-500 to-amber-600 text-white px-6 py-3 rounded-xl font-bold hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center"
               >
-                <Plus size={16} />
-                Add Package
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></div>
+                <Plus size={20} className="mr-2 relative z-10" />
+                <span className="relative z-10">Add Package</span>
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-orange-100">
               <table className="min-w-full">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Duration</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                  <tr className="bg-gradient-to-r from-orange-50 to-amber-50">
+                    <th className="px-4 py-4 text-left text-sm font-bold text-orange-800">Name</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-orange-800">Duration</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-orange-800">Price</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-orange-800">Status</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-orange-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {packages.map((pkg) => (
-                    <tr key={pkg.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-800">{pkg.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{pkg.duration}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">${pkg.price.toFixed(2)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          pkg.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    <tr key={pkg.id} className="hover:bg-orange-50 transition-colors border-b border-orange-100">
+                      <td className="px-4 py-4 text-sm text-gray-800 font-medium">{pkg.name}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{pkg.duration}</td>
+                      <td className="px-4 py-4 text-sm font-bold text-orange-600">₹{pkg.price?.toLocaleString('en-IN') || 'N/A'}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          pkg.status === 'Active' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white shadow-md' : 'bg-gradient-to-r from-red-400 to-red-500 text-white shadow-md'
                         }`}>
                           {pkg.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 flex gap-2">
+                      <td className="px-4 py-4 flex gap-2">
                         <button
                           onClick={() => handleEditPackage(pkg)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="p-2 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition-all"
                           title="Edit"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleUpdatePackageStatus(pkg.id, pkg.status === 'Active' ? 'Inactive' : 'Active')}
-                          className={pkg.status === 'Active' ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800'}
+                          className={`p-2 rounded-lg transition-all ${pkg.status === 'Active' ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                           title={pkg.status === 'Active' ? 'Deactivate' : 'Activate'}
                         >
                           {pkg.status === 'Active' ? <PowerOff size={16} /> : <Power size={16} />}
                         </button>
                         <button
                           onClick={() => handleDeletePackage(pkg.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -1308,62 +1421,72 @@ export default function AdminDashboard() {
 
         {/* Movies Tab */}
         {activeTab === 'movies' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Movies ({movies.length})</h2>
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-pink-100">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Movies Management</h2>
+                <p className="text-gray-500 mt-1">Manage all movies ({movies.length})</p>
+              </div>
               <button
                 onClick={() => {
                   setMoviePreview('');
                   setEditModal({ isOpen: true, type: 'movie', data: null });
                 }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="relative group bg-gradient-to-r from-pink-500 to-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:from-pink-600 hover:to-rose-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center"
               >
-                <Plus size={16} />
-                Add Movie
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></div>
+                <Plus size={20} className="mr-2 relative z-10" />
+                <span className="relative z-10">Add Movie</span>
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-pink-100">
               <table className="min-w-full">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Title</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Genre</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Rating</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                  <tr className="bg-gradient-to-r from-pink-50 to-rose-50">
+                    <th className="px-4 py-4 text-left text-sm font-bold text-pink-800">Title</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-pink-800">Genre</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-pink-800">Language</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-pink-800">Duration</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-pink-800">Rating</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-pink-800">Status</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-pink-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {movies.map((movie) => (
-                    <tr key={movie.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-800">{movie.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{movie.genre}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{movie.rating}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          movie.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    <tr key={movie.id} className="hover:bg-pink-50 transition-colors border-b border-pink-100">
+                      <td className="px-4 py-4 text-sm text-gray-800 font-medium">{movie.title}</td>
+                      <td className="px-4 py-4">
+                        <span className="text-xs bg-gradient-to-r from-pink-400 to-rose-400 text-white px-3 py-1 rounded-full font-medium shadow-md">{movie.genre}</span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{movie.language || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{movie.duration || 'N/A'} min</td>
+                      <td className="px-4 py-4 text-sm font-bold text-pink-600">⭐ {movie.rating || 'N/A'}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          movie.status === 'Active' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white shadow-md' : 'bg-gradient-to-r from-red-400 to-red-500 text-white shadow-md'
                         }`}>
                           {movie.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 flex gap-2">
+                      <td className="px-4 py-4 flex gap-2">
                         <button
                           onClick={() => handleEditMovie(movie)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="p-2 bg-pink-100 text-pink-600 rounded-lg hover:bg-pink-200 transition-all"
                           title="Edit"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleUpdateMovieStatus(movie.id, movie.status === 'Active' ? 'Inactive' : 'Active')}
-                          className={movie.status === 'Active' ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800'}
+                          className={`p-2 rounded-lg transition-all ${movie.status === 'Active' ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                           title={movie.status === 'Active' ? 'Deactivate' : 'Activate'}
                         >
                           {movie.status === 'Active' ? <PowerOff size={16} /> : <Power size={16} />}
                         </button>
                         <button
                           onClick={() => handleDeleteMovie(movie.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -1379,73 +1502,77 @@ export default function AdminDashboard() {
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Users ({users.length})</h2>
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-indigo-100">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Users Management</h2>
+                <p className="text-gray-500 mt-1">Manage all users ({users.length})</p>
+              </div>
               <button
                 onClick={() => setEditModal({ isOpen: true, type: 'user', data: null })}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="relative group bg-gradient-to-r from-indigo-500 to-violet-600 text-white px-6 py-3 rounded-xl font-bold hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center"
               >
-                <Plus size={16} />
-                Add User
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></div>
+                <Plus size={20} className="mr-2 relative z-10" />
+                <span className="relative z-10">Add User</span>
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-indigo-100">
               <table className="min-w-full">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Username</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Full Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Email</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Phone</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Role</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                  <tr className="bg-gradient-to-r from-indigo-50 to-violet-50">
+                    <th className="px-4 py-4 text-left text-sm font-bold text-indigo-800">Username</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-indigo-800">Full Name</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-indigo-800">Email</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-indigo-800">Phone</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-indigo-800">Role</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-indigo-800">Status</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-indigo-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-800">{user.username}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{user.fullName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{user.email}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800">{user.phone}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'Admin' ? 'bg-purple-100 text-purple-800' :
-                          user.role === 'Recruiter' ? 'bg-green-100 text-green-800' :
-                          user.role === 'Advertiser' ? 'bg-orange-100 text-orange-800' :
-                          user.role === 'BookingAgent' ? 'bg-teal-100 text-teal-800' :
-                          'bg-blue-100 text-blue-800'
+                    <tr key={user.id} className="hover:bg-indigo-50 transition-colors border-b border-indigo-100">
+                      <td className="px-4 py-4 text-sm text-gray-800 font-medium">{user.username}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{user.fullName}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{user.email}</td>
+                      <td className="px-4 py-4 text-sm text-gray-800">{user.phone || 'N/A'}</td>
+                      <td className="px-4 py-4">
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium shadow-md ${
+                          user.role === 'Admin' ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white' :
+                          user.role === 'Recruiter' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white' :
+                          user.role === 'Advertiser' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white' :
+                          user.role === 'BookingAgent' ? 'bg-gradient-to-r from-teal-400 to-teal-500 text-white' :
+                          'bg-gradient-to-r from-blue-400 to-blue-500 text-white'
                         }`}>
                           {user.role}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      <td className="px-4 py-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          user.isActive ? 'bg-gradient-to-r from-green-400 to-green-500 text-white shadow-md' : 'bg-gradient-to-r from-red-400 to-red-500 text-white shadow-md'
                         }`}>
                           {user.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 flex gap-2">
+                      <td className="px-4 py-4 flex gap-2">
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="p-2 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-all"
                           title="Edit"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleUpdateUserStatus(user.id, !user.isActive)}
-                          className={user.isActive ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800'}
+                          className={`p-2 rounded-lg transition-all ${user.isActive ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                           title={user.isActive ? 'Deactivate' : 'Activate'}
                         >
                           {user.isActive ? <PowerOff size={16} /> : <Power size={16} />}
                         </button>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -2164,51 +2291,49 @@ export default function AdminDashboard() {
               )}
 
               {editModal.type === 'ad' && (
-                <form onSubmit={handleSaveAd} className="space-y-4">
+                <form onSubmit={handleSaveAd} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ad Title *</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Ad Title *</label>
                     <input
                       type="text"
                       value={adFormData.title}
                       onChange={(e) => setAdFormData({ ...adFormData, title: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      placeholder="What are you selling? (max 100 chars)"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
+                      placeholder="What are you selling?"
                       required
-                      maxLength="100"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Description *</label>
                     <textarea
                       value={adFormData.description}
                       onChange={(e) => setAdFormData({ ...adFormData, description: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all resize-none"
                       rows="4"
                       placeholder="Describe your item in detail..."
                       required
-                      maxLength="2000"
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹) *</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Price (₹) *</label>
                       <input
                         type="number"
                         step="1"
                         value={adFormData.price}
                         onChange={(e) => setAdFormData({ ...adFormData, price: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
                         placeholder="Enter price"
                         required
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Category *</label>
                       <select
                         value={adFormData.categoryName}
                         onChange={(e) => setAdFormData({ ...adFormData, categoryName: e.target.value, subcategory: '', customCategory: '' })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
                         required
                       >
                         <option value="">Select Category</option>
@@ -2249,158 +2374,251 @@ export default function AdminDashboard() {
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Location *</label>
                       <input
                         type="text"
                         value={adFormData.location}
                         onChange={(e) => setAdFormData({ ...adFormData, location: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        placeholder="Area, Street (max 100 chars)"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
+                        placeholder="Area, Street"
                         required
-                        maxLength="100"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">State *</label>
                       <select
-                        value={adFormData.city}
-                        onChange={(e) => setAdFormData({ ...adFormData, city: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                        value={selectedState}
+                        onChange={(e) => {
+                          setSelectedState(e.target.value);
+                          loadCities(e.target.value);
+                          setAdFormData({ ...adFormData, city: '' });
+                        }}
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
                         required
                       >
-                        <option value="">Select City</option>
-                        <option value="Mumbai">Mumbai</option>
-                        <option value="Delhi">Delhi</option>
-                        <option value="Bangalore">Bangalore</option>
-                        <option value="Chennai">Chennai</option>
-                        <option value="Hyderabad">Hyderabad</option>
-                        <option value="Pune">Pune</option>
-                        <option value="Kolkata">Kolkata</option>
-                        <option value="Ahmedabad">Ahmedabad</option>
+                        <option value="">Select State</option>
+                        {states.map((state) => (
+                          <option key={state.code} value={state.code}>{state.name}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Condition *</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">City *</label>
+                    <select
+                      value={adFormData.city}
+                      onChange={(e) => setAdFormData({ ...adFormData, city: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
+                      required
+                      disabled={!selectedState}
+                    >
+                      <option value="">Select City</option>
+                      {cities.map((city) => (
+                        <option key={city.id} value={city.name}>{city.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Condition *</label>
                     <select
                       value={adFormData.condition}
                       onChange={(e) => setAdFormData({ ...adFormData, condition: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
                       required
                     >
                       <option value="">Select Condition</option>
-                      <option value="New">New</option>
-                      <option value="Like New">Like New</option>
-                      <option value="Good">Good</option>
-                      <option value="Fair">Fair</option>
+                      {conditions.map((condition) => (
+                        <option key={condition.id} value={condition.name}>{condition.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Phone Number *</label>
                       <input
                         type="tel"
                         value={adFormData.phone}
                         onChange={(e) => setAdFormData({ ...adFormData, phone: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
                         placeholder="+91 XXXXX XXXXX"
-                        pattern="[0-9+\-\s]+"
-                        maxLength="15"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Email *</label>
                       <input
                         type="email"
                         value={adFormData.email}
                         onChange={(e) => setAdFormData({ ...adFormData, email: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
                         placeholder="your@email.com"
-                        maxLength="100"
                         required
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Primary Image *</label>
-                    <input
-                      name="primaryAdImage"
-                      type="file"
-                      accept="image/*"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const preview = await fileToDataUrl(file);
-                          setAdPrimaryPreview(preview);
-                        }
-                      }}
-                    />
-                    {(adPrimaryPreview || adFormData.imageUrl) && (
-                      <img src={adPrimaryPreview || adFormData.imageUrl} alt="Preview" className="mt-2 h-32 w-32 rounded object-cover border" />
-                    )}
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Primary Image *</label>
+                    <div
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                        isDraggingPrimary 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+                      }`}
+                      onDragOver={handlePrimaryDragOver}
+                      onDragLeave={handlePrimaryDragLeave}
+                      onDrop={handlePrimaryDrop}
+                    >
+                      <input
+                        name="primaryAdImage"
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const preview = await fileToDataUrl(file);
+                            setAdPrimaryPreview(preview);
+                          }
+                        }}
+                      />
+                      {adPrimaryPreview || adFormData.imageUrl ? (
+                        <div className="relative">
+                          <img 
+                            src={adPrimaryPreview || adFormData.imageUrl} 
+                            alt="Preview" 
+                            className="mx-auto h-40 w-40 rounded-xl object-cover border-2 border-purple-200 shadow-lg" 
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAdPrimaryPreview('');
+                              setAdFormData({ ...adFormData, imageUrl: '' });
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-all shadow-md"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Upload className="mx-auto text-purple-400" size={48} />
+                          <p className="text-sm text-gray-600 font-medium">Drag & drop or click to upload</p>
+                          <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Additional Images</label>
-                    <input
-                      name="additionalAdImages"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      onChange={async (e) => {
-                        const files = e.target.files;
-                        if (files && files.length > 0) {
-                          const previews = await filesToDataUrls(files);
-                          setAdAdditionalPreviews(previews);
-                        }
-                      }}
-                    />
-                    <div className="mt-2 flex gap-2 flex-wrap">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Additional Images</label>
+                    <div
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                        isDraggingAdditional 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+                      }`}
+                      onDragOver={handleAdditionalDragOver}
+                      onDragLeave={handleAdditionalDragLeave}
+                      onDrop={handleAdditionalDrop}
+                    >
+                      <input
+                        name="additionalAdImages"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={async (e) => {
+                          const files = e.target.files;
+                          if (files && files.length > 0) {
+                            const previews = await filesToDataUrls(files);
+                            setAdAdditionalPreviews([...adAdditionalPreviews, ...previews]);
+                          }
+                        }}
+                      />
+                      <div className="space-y-2">
+                        <ImageIcon className="mx-auto text-purple-400" size={48} />
+                        <p className="text-sm text-gray-600 font-medium">Drag & drop or click to upload multiple</p>
+                        <p className="text-xs text-gray-400">PNG, JPG up to 5MB each</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-4 gap-3">
                       {adAdditionalPreviews.length > 0 && adAdditionalPreviews.map((url, index) => (
-                        <img key={`new-${index}`} src={url} alt={`New ${index + 1}`} className="h-20 w-20 rounded object-cover border" />
+                        <div key={`new-${index}`} className="relative group">
+                          <img 
+                            src={url} 
+                            alt={`New ${index + 1}`} 
+                            className="h-24 w-full rounded-xl object-cover border-2 border-purple-200 shadow-md" 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newPreviews = [...adAdditionalPreviews];
+                              newPreviews.splice(index, 1);
+                              setAdAdditionalPreviews(newPreviews);
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
                       ))}
                       {Array.isArray(adFormData.imageUrls) && adFormData.imageUrls.length > 0 && adFormData.imageUrls.map((url, index) => (
-                        <img key={`existing-${index}`} src={url} alt={`Existing ${index + 1}`} className="h-20 w-20 rounded object-cover border" />
+                        <div key={`existing-${index}`} className="relative group">
+                          <img 
+                            src={url} 
+                            alt={`Existing ${index + 1}`} 
+                            className="h-24 w-full rounded-xl object-cover border-2 border-purple-200 shadow-md" 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newImageUrls = [...adFormData.imageUrls];
+                              newImageUrls.splice(index, 1);
+                              setAdFormData({ ...adFormData, imageUrls: newImageUrls });
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="flex items-center cursor-pointer bg-white px-4 py-3 border border-gray-200 rounded-xl">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <label className="flex items-center cursor-pointer bg-white px-4 py-3 border-2 border-purple-200 rounded-xl hover:border-purple-400 transition-all">
                       <input
                         type="checkbox"
                         checked={adFormData.negotiable}
                         onChange={(e) => setAdFormData({ ...adFormData, negotiable: e.target.checked })}
-                        className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
+                        className="w-5 h-5 text-purple-500 rounded focus:ring-purple-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Price is negotiable</span>
+                      <span className="ml-2 text-sm font-medium text-gray-700">Negotiable</span>
                     </label>
-                    <label className="flex items-center cursor-pointer bg-white px-4 py-3 border border-gray-200 rounded-xl">
+                    <label className="flex items-center cursor-pointer bg-white px-4 py-3 border-2 border-purple-200 rounded-xl hover:border-purple-400 transition-all">
                       <input
                         type="checkbox"
                         checked={adFormData.isFeatured}
                         onChange={(e) => setAdFormData({ ...adFormData, isFeatured: e.target.checked })}
                         className="w-5 h-5 text-yellow-500 rounded focus:ring-yellow-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Featured Ad</span>
+                      <span className="ml-2 text-sm font-medium text-gray-700">Featured</span>
                     </label>
-                    <label className="flex items-center cursor-pointer bg-white px-4 py-3 border border-gray-200 rounded-xl">
+                    <label className="flex items-center cursor-pointer bg-white px-4 py-3 border-2 border-purple-200 rounded-xl hover:border-purple-400 transition-all">
                       <input
                         type="checkbox"
                         checked={adFormData.isUrgent}
                         onChange={(e) => setAdFormData({ ...adFormData, isUrgent: e.target.checked })}
-                        className="w-4 h-4 text-red-500 rounded focus:ring-red-500"
+                        className="w-5 h-5 text-red-500 rounded focus:ring-red-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Urgent Sale</span>
+                      <span className="ml-2 text-sm font-medium text-gray-700">Urgent</span>
                     </label>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Status</label>
                     <select
                       value={adFormData.status}
                       onChange={(e) => setAdFormData({ ...adFormData, status: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white transition-all"
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
@@ -2410,7 +2628,7 @@ export default function AdminDashboard() {
                   <div className="flex space-x-4 pt-4">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md"
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 rounded-xl font-bold hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg"
                     >
                       {editModal.data?.id ? 'Update Ad' : 'Create Ad'}
                     </button>
@@ -2439,8 +2657,9 @@ export default function AdminDashboard() {
                         });
                         setAdPrimaryPreview('');
                         setAdAdditionalPreviews([]);
+                        setSelectedState('');
                       }}
-                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all"
                     >
                       Cancel
                     </button>
@@ -2449,98 +2668,106 @@ export default function AdminDashboard() {
               )}
 
               {editModal.type === 'job' && (
-                <form onSubmit={(e) => { e.preventDefault(); handleSaveJob({ title: e.target.title.value, company: e.target.company.value, location: e.target.location.value, salary: e.target.salary.value, type: e.target.type.value, description: e.target.description.value, skills: e.target.skills.value.split(',').map(s => s.trim()), status: e.target.status.value }); }}>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                      <input name="title" defaultValue={editModal.data?.title} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                      <input name="company" defaultValue={editModal.data?.company} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                        <input name="location" defaultValue={editModal.data?.location} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
-                        <input name="salary" defaultValue={editModal.data?.salary} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                      <input name="type" defaultValue={editModal.data?.type} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                      <textarea name="description" defaultValue={editModal.data?.description} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows="3" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Skills (comma separated)</label>
-                      <input name="skills" defaultValue={editModal.data?.skills?.join(', ')} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    </div>
-                    <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                      Save
-                    </button>
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveJob({ title: e.target.title.value, company: e.target.company.value, location: e.target.location.value, salary: e.target.salary.value, type: e.target.type.value, description: e.target.description.value, skills: e.target.skills.value.split(',').map(s => s.trim()), status: e.target.status.value }); }} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Job Title *</label>
+                    <input name="title" defaultValue={editModal.data?.title} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all" placeholder="e.g. Senior Software Engineer" required />
                   </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Company *</label>
+                    <input name="company" defaultValue={editModal.data?.company} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all" placeholder="Company name" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Location *</label>
+                      <input name="location" defaultValue={editModal.data?.location} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all" placeholder="City, State" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Salary *</label>
+                      <input name="salary" defaultValue={editModal.data?.salary} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all" placeholder="e.g. ₹10-15 LPA" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Job Type *</label>
+                    <select name="type" defaultValue={editModal.data?.type || 'Full-time'} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all">
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Internship">Internship</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Description *</label>
+                    <textarea name="description" defaultValue={editModal.data?.description} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all resize-none" rows="4" placeholder="Job description..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Skills (comma separated) *</label>
+                    <input name="skills" defaultValue={editModal.data?.skills?.join(', ')} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all" placeholder="e.g. React, Node.js, MongoDB" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Status</label>
+                    <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white transition-all">
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-bold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl">
+                    Save Job
+                  </button>
                 </form>
               )}
 
               {editModal.type === 'transport' && (
-                <form onSubmit={(e) => { e.preventDefault(); handleSaveTransport({ type: e.target.type.value, name: e.target.name.value, source: e.target.source.value, destination: e.target.destination.value, price: parseFloat(e.target.price.value), duration: e.target.duration.value, operator: e.target.operator.value, status: e.target.status.value }); }}>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                      <input name="type" defaultValue={editModal.data?.type} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                      <input name="name" defaultValue={editModal.data?.name} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-                        <input name="source" defaultValue={editModal.data?.source} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                        <input name="destination" defaultValue={editModal.data?.destination} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                        <input name="price" type="number" step="0.01" defaultValue={editModal.data?.price} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                        <input name="duration" defaultValue={editModal.data?.duration} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Operator</label>
-                      <input name="operator" defaultValue={editModal.data?.operator} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    </div>
-                    <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                      Save
-                    </button>
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveTransport({ type: e.target.type.value, name: e.target.name.value, source: e.target.source.value, destination: e.target.destination.value, price: parseFloat(e.target.price.value), duration: e.target.duration.value, operator: e.target.operator.value, status: e.target.status.value }); }} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Transport Type *</label>
+                    <select name="type" defaultValue={editModal.data?.type || 'Bus'} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all">
+                      <option value="Bus">Bus</option>
+                      <option value="Train">Train</option>
+                      <option value="Flight">Flight</option>
+                      <option value="Cab">Cab</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Service Name *</label>
+                    <input name="name" defaultValue={editModal.data?.name} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all" placeholder="e.g. Express Bus Service" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Source *</label>
+                      <input name="source" defaultValue={editModal.data?.source} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all" placeholder="Starting point" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Destination *</label>
+                      <input name="destination" defaultValue={editModal.data?.destination} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all" placeholder="Ending point" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Price (₹) *</label>
+                      <input name="price" type="number" step="0.01" defaultValue={editModal.data?.price} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all" placeholder="e.g. 500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Duration *</label>
+                      <input name="duration" defaultValue={editModal.data?.duration} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all" placeholder="e.g. 2 hours" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Operator</label>
+                    <input name="operator" defaultValue={editModal.data?.operator} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all" placeholder="Service operator name" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Status</label>
+                    <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm bg-white transition-all">
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 rounded-xl font-bold hover:from-green-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl">
+                    Save Transport
+                  </button>
                 </form>
               )}
 
@@ -2558,37 +2785,46 @@ export default function AdminDashboard() {
                     status: e.target.status.value
                   });
                   setPackagePreview('');
-                }}>
-                  <div className="space-y-4">
+                }} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Package Name *</label>
+                    <input name="name" defaultValue={editModal.data?.name} className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white transition-all" placeholder="e.g. Golden Triangle Tour" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Description *</label>
+                    <textarea name="description" defaultValue={editModal.data?.description} className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white transition-all resize-none" rows="4" placeholder="Package description..." />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                      <input name="name" defaultValue={editModal.data?.name} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Duration *</label>
+                      <input name="duration" defaultValue={editModal.data?.duration} className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white transition-all" placeholder="e.g. 5 days 4 nights" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                      <textarea name="description" defaultValue={editModal.data?.description} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows="3" />
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Price (₹) *</label>
+                      <input name="price" type="number" step="0.01" defaultValue={editModal.data?.price} className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white transition-all" placeholder="e.g. 25000" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                        <input name="duration" defaultValue={editModal.data?.duration} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                        <input name="price" type="number" step="0.01" defaultValue={editModal.data?.price} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Destinations (comma separated)</label>
-                      <input name="destinations" defaultValue={editModal.data?.destinations?.join(', ')} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Destinations (comma separated) *</label>
+                    <input name="destinations" defaultValue={editModal.data?.destinations?.join(', ')} className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white transition-all" placeholder="e.g. Delhi, Agra, Jaipur" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Package Image *</label>
+                    <div
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                        isDraggingPackage 
+                          ? 'border-orange-500 bg-orange-50' 
+                          : 'border-orange-200 hover:border-orange-400 hover:bg-orange-50'
+                      }`}
+                      onDragOver={handlePackageDragOver}
+                      onDragLeave={handlePackageDragLeave}
+                      onDrop={handlePackageDrop}
+                    >
                       <input 
                         name="imageUrl" 
                         type="file" 
                         accept="image/*" 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -2597,21 +2833,43 @@ export default function AdminDashboard() {
                           }
                         }}
                       />
-                      {(packagePreview || editModal.data?.imageUrl) && (
-                        <img src={packagePreview || editModal.data?.imageUrl} alt="Preview" className="mt-2 h-32 w-32 rounded object-cover border" />
+                      {packagePreview || editModal.data?.imageUrl ? (
+                        <div className="relative">
+                          <img 
+                            src={packagePreview || editModal.data?.imageUrl} 
+                            alt="Preview" 
+                            className="mx-auto h-40 w-40 rounded-xl object-cover border-2 border-orange-200 shadow-lg" 
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPackagePreview('');
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-all shadow-md"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Upload className="mx-auto text-orange-400" size={48} />
+                          <p className="text-sm text-gray-600 font-medium">Drag & drop or click to upload</p>
+                          <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+                        </div>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    </div>
-                    <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                      Save
-                    </button>
                   </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Status</label>
+                    <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white transition-all">
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-xl font-bold hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg hover:shadow-xl">
+                    Save Package
+                  </button>
                 </form>
               )}
 
@@ -2629,39 +2887,59 @@ export default function AdminDashboard() {
                     status: e.target.status.value
                   });
                   setMoviePreview('');
-                }}>
-                  <div className="space-y-4">
+                }} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Movie Title *</label>
+                    <input name="title" defaultValue={editModal.data?.title} className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 text-sm bg-white transition-all" placeholder="e.g. The Dark Knight" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                      <input name="title" defaultValue={editModal.data?.title} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Genre</label>
-                        <input name="genre" defaultValue={editModal.data?.genre} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
-                        <input name="language" defaultValue={editModal.data?.language} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
-                        <input name="duration" type="number" defaultValue={editModal.data?.duration} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-                        <input name="rating" type="number" step="0.1" defaultValue={editModal.data?.rating} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                      </div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Genre *</label>
+                      <select name="genre" defaultValue={editModal.data?.genre || 'Action'} className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 text-sm bg-white transition-all">
+                        <option value="Action">Action</option>
+                        <option value="Comedy">Comedy</option>
+                        <option value="Drama">Drama</option>
+                        <option value="Horror">Horror</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Thriller">Thriller</option>
+                        <option value="Sci-Fi">Sci-Fi</option>
+                        <option value="Animation">Animation</option>
+                        <option value="Documentary">Documentary</option>
+                        <option value="Other">Other</option>
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Language *</label>
+                      <input name="language" defaultValue={editModal.data?.language} className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 text-sm bg-white transition-all" placeholder="e.g. English" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Duration (minutes) *</label>
+                      <input name="duration" type="number" defaultValue={editModal.data?.duration} className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 text-sm bg-white transition-all" placeholder="e.g. 120" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Rating (1-10) *</label>
+                      <input name="rating" type="number" step="0.1" min="1" max="10" defaultValue={editModal.data?.rating} className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 text-sm bg-white transition-all" placeholder="e.g. 8.5" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Movie Poster *</label>
+                    <div
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                        isDraggingMovie 
+                          ? 'border-pink-500 bg-pink-50' 
+                          : 'border-pink-200 hover:border-pink-400 hover:bg-pink-50'
+                      }`}
+                      onDragOver={handleMovieDragOver}
+                      onDragLeave={handleMovieDragLeave}
+                      onDrop={handleMovieDrop}
+                    >
                       <input 
                         name="imageUrl" 
                         type="file" 
                         accept="image/*" 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -2670,21 +2948,43 @@ export default function AdminDashboard() {
                           }
                         }}
                       />
-                      {(moviePreview || editModal.data?.imageUrl) && (
-                        <img src={moviePreview || editModal.data?.imageUrl} alt="Preview" className="mt-2 h-32 w-32 rounded object-cover border" />
+                      {moviePreview || editModal.data?.imageUrl ? (
+                        <div className="relative">
+                          <img 
+                            src={moviePreview || editModal.data?.imageUrl} 
+                            alt="Preview" 
+                            className="mx-auto h-40 w-40 rounded-xl object-cover border-2 border-pink-200 shadow-lg" 
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMoviePreview('');
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-all shadow-md"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Upload className="mx-auto text-pink-400" size={48} />
+                          <p className="text-sm text-gray-600 font-medium">Drag & drop or click to upload</p>
+                          <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+                        </div>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    </div>
-                    <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                      Save
-                    </button>
                   </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Status</label>
+                    <select name="status" defaultValue={editModal.data?.status || 'Active'} className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 text-sm bg-white transition-all">
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full bg-gradient-to-r from-pink-500 to-rose-600 text-white py-3 rounded-xl font-bold hover:from-pink-600 hover:to-rose-700 transition-all shadow-lg hover:shadow-xl">
+                    Save Movie
+                  </button>
                 </form>
               )}
 
@@ -2747,82 +3047,82 @@ export default function AdminDashboard() {
                     userData.password = e.target.newPassword.value;
                   }
                   handleSaveUser(userData);
-                }}>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                      <input
-                        name="username"
-                        defaultValue={editModal.data?.username}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        readOnly={!!editModal.data}
-                        {...(!editModal.data ? { required: true } : {})}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                      <input name="fullName" defaultValue={editModal.data?.fullName} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required maxLength="100" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input
-                        name="email"
-                        type="email"
-                        defaultValue={editModal.data?.email}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        readOnly={!!editModal.data}
-                        {...(!editModal.data ? { required: true } : {})}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                      <input name="phone" defaultValue={editModal.data?.phone} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required maxLength="20" pattern="[0-9+\-\s]+" title="Only numbers, +, - and spaces allowed" />
-                    </div>
-                    {editModal.data && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                        <input
-                          type="text"
-                          value="••••••••"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
-                          readOnly
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Current password is masked for security. Enter a new password below to reset.</p>
-                      </div>
-                    )}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">New Password {editModal.data ? '(Leave blank to keep current)' : '(Required)'}</label>
-                      <input
-                        name="newPassword"
-                        type="password"
-                        defaultValue=""
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        {...(!editModal.data ? { required: true, minLength: 6 } : { minLength: 6 })}
-                        maxLength="100"
-                        placeholder={editModal.data ? "Enter new password to reset" : "Create a password"}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                      <select name="role" defaultValue={editModal.data?.role || 'User'} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="User">User</option>
-                        <option value="Recruiter">Recruiter</option>
-                        <option value="Advertiser">Advertiser</option>
-                        <option value="BookingAgent">Booking Agent</option>
-                        <option value="Admin">Admin</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select name="isActive" defaultValue={editModal.data?.isActive ? 'true' : 'false'} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                      </select>
-                    </div>
-                    <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                      Save
-                    </button>
+                }} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Username *</label>
+                    <input
+                      name="username"
+                      defaultValue={editModal.data?.username}
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white transition-all"
+                      readOnly={!!editModal.data}
+                      {...(!editModal.data ? { required: true } : {})}
+                      placeholder="Choose a username"
+                    />
                   </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Full Name *</label>
+                    <input name="fullName" defaultValue={editModal.data?.fullName} className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white transition-all" required maxLength="100" placeholder="Full name" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Email *</label>
+                    <input
+                      name="email"
+                      type="email"
+                      defaultValue={editModal.data?.email}
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white transition-all"
+                      readOnly={!!editModal.data}
+                      {...(!editModal.data ? { required: true } : {})}
+                      placeholder="your@email.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Phone *</label>
+                    <input name="phone" defaultValue={editModal.data?.phone} className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white transition-all" required maxLength="20" pattern="[0-9+\-\s]+" title="Only numbers, +, - and spaces allowed" placeholder="+91 9876543210" />
+                  </div>
+                  {editModal.data && (
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Current Password</label>
+                      <input
+                        type="text"
+                        value="••••••••"
+                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl bg-indigo-50 text-sm"
+                        readOnly
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Current password is masked for security. Enter a new password below to reset.</p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">New Password {editModal.data ? '(Leave blank to keep current)' : '(Required)'}</label>
+                    <input
+                      name="newPassword"
+                      type="password"
+                      defaultValue=""
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white transition-all"
+                      {...(!editModal.data ? { required: true, minLength: 6 } : { minLength: 6 })}
+                      maxLength="100"
+                      placeholder={editModal.data ? "Enter new password to reset" : "Create a password"}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Role *</label>
+                    <select name="role" defaultValue={editModal.data?.role || 'User'} className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white transition-all">
+                      <option value="User">User</option>
+                      <option value="Recruiter">Recruiter</option>
+                      <option value="Advertiser">Advertiser</option>
+                      <option value="BookingAgent">Booking Agent</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Status</label>
+                    <select name="isActive" defaultValue={editModal.data?.isActive ? 'true' : 'false'} className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white transition-all">
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full bg-gradient-to-r from-indigo-500 to-violet-600 text-white py-3 rounded-xl font-bold hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg hover:shadow-xl">
+                    Save User
+                  </button>
                 </form>
               )}
             </div>

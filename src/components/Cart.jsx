@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Sparkles, Package, ShieldCheck, Truck } from 'lucide-react';
 import { shoppingApi } from '../services/api';
 
 export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = false }) {
@@ -152,42 +152,62 @@ export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = fa
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        {!hideTitle && <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8">Shopping Cart</h1>}
+        {!hideTitle && (
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl">
+              <ShoppingCart className="text-white w-6 h-6" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Shopping Cart</h1>
+          </div>
+        )}
 
         {cartItems.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-6 sm:p-8 text-center">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Your cart is empty</h2>
-            <p className="text-gray-500 text-sm sm:text-base">Add items to get started</p>
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-200 to-indigo-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShoppingCart className="text-purple-600 w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
+            <p className="text-gray-600">Add items to get started with your shopping journey</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Cart Items */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Cart Items</h2>
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center gap-2 mb-6">
+                  <Package className="text-purple-600 w-5 h-5" />
+                  <h2 className="text-xl font-bold text-gray-900">Cart Items ({cartItems.length})</h2>
+                </div>
                 <div className="space-y-4">
                   {cartItems.map((item) => {
                     const isExpanded = expandedDescriptions[item.id];
-                    const shortDesc = item.product?.description && item.product.description.length > 100 ? item.product.description.substring(0, 100) + '...' : item.product?.description;
+                    const shortDesc = item.product?.description && item.product.description.length > 80 ? item.product.description.substring(0, 80) + '...' : item.product?.description;
                     return (
-                    <div key={item.id} className="flex flex-col sm:flex-row gap-4 border-b pb-4 last:border-0">
-                      <img
-                        src={item.product?.imageUrl}
-                        alt={item.product?.name}
-                        className="w-full sm:w-24 h-48 sm:h-24 object-cover rounded-lg"
-                      />
+                    <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-0 hover:bg-purple-50/50 rounded-xl p-3 transition-colors group">
+                      <div className="relative">
+                        <img
+                          src={item.product?.imageUrl}
+                          alt={item.product?.name}
+                          className="w-24 h-24 object-cover rounded-xl bg-gray-100 group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {item.offerPercentage > 0 && (
+                          <div className="absolute top-0 left-0 bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded-tl-xl rounded-br-lg text-xs font-bold">
+                            {item.offerPercentage}% OFF
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-800 text-base sm:text-lg">{item.product?.name}</p>
+                        <p className="font-semibold text-gray-900 text-sm line-clamp-2 group-hover:text-purple-600 transition-colors">{item.product?.name}</p>
                         <div className="flex gap-2 mb-2">
                           {item.colorVariantName && (
-                            <span className="inline-block bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs font-semibold">
+                            <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
                               {item.colorVariantName}
                             </span>
                           )}
                           {item.sizeOptionName && (
-                            <span className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-semibold">
+                            <span className="inline-block bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
                               {item.sizeOptionName}
                             </span>
                           )}
@@ -198,49 +218,49 @@ export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = fa
                           </div>
                         )}
                         <div className="mb-2">
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs text-gray-500 line-clamp-2">
                             {isExpanded ? item.product?.description : shortDesc}
                           </p>
-                          {item.product?.description && item.product.description.length > 100 && (
+                          {item.product?.description && item.product.description.length > 80 && (
                             <button
                               onClick={() => setExpandedDescriptions(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
-                              className="text-blue-600 text-xs font-semibold mt-1 hover:text-blue-800 transition-colors"
+                              className="text-gray-600 text-xs font-medium mt-1 hover:text-gray-900"
                             >
                               {isExpanded ? 'Show Less' : 'Read More'}
                             </button>
                           )}
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
+                        <div className="flex items-center justify-between gap-3 mt-2">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleUpdateQuantity(item, -1)}
-                              className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                              className="w-7 h-7 rounded border border-gray-300 hover:border-gray-400 flex items-center justify-center"
                             >
-                              <Minus size={16} />
+                              <Minus size={14} />
                             </button>
-                            <span className="w-8 text-center font-medium">{item.quantity}</span>
+                            <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
                             <button
                               onClick={() => handleUpdateQuantity(item, 1)}
-                              className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                              className="w-7 h-7 rounded border border-gray-300 hover:border-gray-400 flex items-center justify-center"
                             >
-                              <Plus size={16} />
+                              <Plus size={14} />
                             </button>
                           </div>
                           <button
                             onClick={() => handleRemoveItem(item)}
-                            className="text-red-600 hover:text-red-800 flex items-center gap-1 text-sm"
+                            className="text-gray-500 hover:text-red-600 flex items-center gap-1 text-xs"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} />
                             Remove
                           </button>
                         </div>
                       </div>
-                      <div className="text-right sm:text-left mt-3 sm:mt-0">
-                        <p className="text-xs text-gray-500 mb-1">{formatPrice(item.itemPrice)} per item</p>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 mb-1">{formatPrice(item.itemPrice)}</p>
                         {item.originalPrice !== item.itemPrice && (
-                          <p className="text-sm text-gray-400 line-through">{formatPrice(item.originalPrice * item.quantity)}</p>
+                          <p className="text-xs text-gray-400 line-through">{formatPrice(item.originalPrice * item.quantity)}</p>
                         )}
-                        <p className="font-semibold text-gray-800 text-lg">{formatPrice(item.totalPrice)}</p>
+                        <p className="font-semibold text-gray-900">{formatPrice(item.totalPrice)}</p>
                       </div>
                     </div>
                     );
@@ -251,25 +271,40 @@ export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = fa
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-blue-50 rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Order Summary</h2>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-6 shadow-lg sticky top-4">
+                <div className="flex items-center gap-2 mb-6">
+                  <Sparkles className="text-purple-600 w-5 h-5" />
+                  <h2 className="text-xl font-bold text-gray-900">Order Summary</h2>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{formatPrice(subtotal)}</span>
+                    <span className="font-semibold text-gray-900">{formatPrice(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Shipping</span>
-                    <span className="font-medium">{formatPrice(shipping)}</span>
+                  {totalDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-600">Discount</span>
+                      <span className="font-semibold text-green-600">-{formatPrice(totalDiscount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm items-center">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <Truck size={14} className="text-purple-600" />
+                      Shipping
+                    </span>
+                    <span className="font-semibold text-gray-900">{formatPrice(shipping)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax (18%)</span>
-                    <span className="font-medium">{formatPrice(tax)}</span>
+                  <div className="flex justify-between text-sm items-center">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <ShieldCheck size={14} className="text-purple-600" />
+                      Tax (18%)
+                    </span>
+                    <span className="font-semibold text-gray-900">{formatPrice(tax)}</span>
                   </div>
-                  <div className="border-t pt-2 mt-2">
-                    <div className="flex justify-between text-xl font-bold">
-                      <span>Total</span>
-                      <span className="text-blue-600">{formatPrice(total)}</span>
+                  <div className="border-t border-purple-200 pt-4 mt-4">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span className="text-gray-900">Total</span>
+                      <span className="text-gray-900">{formatPrice(total)}</span>
                     </div>
                   </div>
                 </div>
@@ -283,10 +318,10 @@ export default function Cart({ onCartChange, onProceedToCheckout, hideTitle = fa
                       onProceedToCheckout();
                     }
                   }}
-                  className="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full mt-4 bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm"
                 >
                   Proceed to Checkout
-                  <ArrowRight size={20} />
+                  <ArrowRight size={16} />
                 </button>
               </div>
             </div>

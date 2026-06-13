@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { CheckCircle, ArrowRight, ArrowLeft, Sparkles, ShieldCheck, Truck, CreditCard, MapPin, User, Lock } from 'lucide-react';
 import { shoppingApi } from '../services/api';
 import ShippingStep from './checkout/ShippingStep';
 import BillingStep from './checkout/BillingStep';
@@ -262,36 +262,52 @@ export default function Checkout({ onClose, onOrderSuccess }) {
   };
 
   const StepIndicator = () => (
-    <div className="flex items-center justify-between mb-8">
-      {steps.map((step, index) => (
-        <div key={step} className="flex items-center flex-1">
-          <div className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 ${
-            index <= currentStep ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg' : 'bg-gray-200 text-gray-600'
-          } font-semibold`}>
-            {index < currentStep ? <CheckCircle size={24} /> : index + 1}
+    <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      {steps.map((step, index) => {
+        const stepIcons = {
+          shipping: <MapPin size={14} />,
+          billing: <User size={14} />,
+          payment: <CreditCard size={14} />,
+          review: <Sparkles size={14} />,
+          confirm: <CheckCircle size={14} />
+        };
+        return (
+          <div key={step} className="flex items-center flex-shrink-0">
+            <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 text-sm font-semibold shadow-md ${
+              index <= currentStep 
+                ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg' 
+                : 'bg-gray-100 text-gray-400'
+            }`}>
+              {index < currentStep ? <CheckCircle size={16} /> : stepIcons[step] || index + 1}
+            </div>
+            <span className={`ml-2 text-xs font-semibold capitalize hidden sm:block transition-all duration-300 ${
+              index <= currentStep ? 'text-gray-900' : 'text-gray-400'
+            }`}>
+              {step}
+            </span>
+            {index < steps.length - 1 && (
+              <div className={`w-12 h-1 mx-2 rounded-full transition-all duration-300 ${
+                index < currentStep ? 'bg-gradient-to-r from-purple-500 to-indigo-600' : 'bg-gray-200'
+              }`} />
+            )}
           </div>
-          <span className={`ml-3 text-sm font-medium capitalize hidden sm:block transition-all duration-300 ${
-            index <= currentStep ? 'text-blue-600 font-semibold' : 'text-gray-400'
-          }`}>
-            {step}
-          </span>
-          {index < steps.length - 1 && (
-            <div className={`flex-1 h-1.5 mx-4 rounded-full transition-all duration-300 ${
-              index < currentStep ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-gray-200'
-            }`} />
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-        <div className="bg-gray-100 p-4 sm:p-6 border-b border-gray-200 flex-shrink-0 relative z-20">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900/80 via-indigo-900/80 to-blue-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom-8 duration-500">
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 border-b border-purple-200 flex-shrink-0 relative z-20">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Checkout</h2>
-            <button onClick={onClose} className="relative z-30 text-gray-500 hover:text-gray-700 text-xl sm:text-2xl font-bold px-2 py-1 hover:bg-gray-200 rounded-lg transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 rounded-xl">
+                <Sparkles className="text-white w-5 h-5" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Checkout</h2>
+            </div>
+            <button onClick={onClose} className="relative z-30 text-gray-500 hover:text-red-600 text-lg sm:text-xl font-medium px-3 py-2 hover:bg-red-50 rounded-xl transition-all duration-200">
               ✕
             </button>
           </div>
@@ -323,26 +339,26 @@ export default function Checkout({ onClose, onOrderSuccess }) {
             <button
               onClick={handleBack}
               disabled={currentStep === 0}
-              className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={16} />
               Back
             </button>
             {currentStep === steps.length - 2 ? (
               <button
                 onClick={handleSubmitOrder}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {loading ? 'Processing...' : 'Place Order'}
               </button>
             ) : currentStep < steps.length - 1 ? (
               <button
                 onClick={handleNext}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors text-sm"
               >
                 Next
-                <ArrowRight size={20} />
+                <ArrowRight size={16} />
               </button>
             ) : null}
           </div>

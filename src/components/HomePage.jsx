@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Briefcase, Calendar, Plane, Star, MapPin, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Briefcase, Calendar, Plane, Star, MapPin, ArrowRight, Sparkles, TrendingUp, Users, Zap } from 'lucide-react';
 import { shoppingApi, advertisingApi, recruitmentApi, bookingApi } from '../services/api';
 
 export default function HomePage() {
@@ -61,55 +61,111 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
-      <section className="bg-blue-600 text-white py-16 sm:py-20 md:py-24">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="relative bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 py-16 sm:py-20 md:py-28 overflow-hidden">
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-full h-full" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: '40px 40px'
+          }}></div>
+        </div>
+        
+        {/* Floating elements */}
+        <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-40 right-20 w-16 h-16 bg-blue-500/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        
+        <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6">
-              Welcome to OneApp
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Sparkles className="text-yellow-300 w-6 h-6 sm:w-8 sm:h-8 animate-spin" style={{ animationDuration: '3s' }} />
+              <span className="text-yellow-300 text-sm sm:text-base font-medium tracking-wider uppercase">Premium Platform</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+              Welcome to <span className="bg-gradient-to-r from-yellow-200 to-pink-200 bg-clip-text text-transparent">OneApp</span>
             </h1>
-            <p className="text-lg sm:text-xl md:text-2xl mb-6 sm:mb-8 md:mb-10 opacity-90 px-4">Your all-in-one platform for shopping, advertising, recruitment, and booking needs</p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 px-4">
-              <Link to="/shopping" className="bg-white text-blue-600 px-8 py-3 sm:px-10 sm:py-4 rounded-xl sm:rounded-2xl font-bold hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2">
-                <ShoppingCart size={20} sm={24} />
+            <p className="text-base sm:text-lg md:text-xl text-purple-100 mb-8 sm:mb-10 max-w-2xl mx-auto px-4 leading-relaxed">
+              Your all-in-one platform for shopping, advertising, recruitment, and booking needs
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
+              <Link to="/shopping" className="group bg-white text-purple-700 px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold hover:bg-purple-50 transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                <ShoppingCart size={18} className="group-hover:scale-110 transition-transform" />
                 <span>Start Shopping</span>
               </Link>
-              <Link to="/advertising" className="bg-transparent border-2 sm:border-3 border-white text-white px-8 py-3 sm:px-10 sm:py-4 rounded-xl sm:rounded-2xl font-bold hover:bg-white hover:text-blue-600 transition-colors flex items-center justify-center space-x-2">
-                <Briefcase size={20} sm={24} />
+              <Link to="/advertising" className="group bg-purple-500/20 backdrop-blur-sm text-white border border-white/30 px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold hover:bg-purple-500/30 transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base">
+                <Briefcase size={18} className="group-hover:scale-110 transition-transform" />
                 <span>Post an Ad</span>
               </Link>
+            </div>
+            
+            {/* Stats */}
+            <div className="flex flex-wrap justify-center gap-6 sm:gap-12 mt-12 sm:mt-16">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-white">
+                  <TrendingUp className="w-5 h-5 text-yellow-300" />
+                  <span className="text-2xl sm:text-3xl font-bold">10K+</span>
+                </div>
+                <p className="text-purple-200 text-xs sm:text-sm mt-1">Products</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-white">
+                  <Users className="w-5 h-5 text-pink-300" />
+                  <span className="text-2xl sm:text-3xl font-bold">5K+</span>
+                </div>
+                <p className="text-purple-200 text-xs sm:text-sm mt-1">Users</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-white">
+                  <Zap className="w-5 h-5 text-blue-300" />
+                  <span className="text-2xl sm:text-3xl font-bold">24/7</span>
+                </div>
+                <p className="text-purple-200 text-xs sm:text-sm mt-1">Support</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Featured Products */}
-      <section className="py-12 sm:py-16 md:py-20">
+      <section className="py-8 sm:py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Featured Products</h2>
-              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Discover our handpicked selection</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 rounded-lg">
+                <ShoppingCart className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Featured Products</h2>
+                <p className="text-gray-500 mt-1 text-sm">Discover our handpicked selection</p>
+              </div>
             </div>
-            <Link to="/shopping" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base">
-              View All <ArrowRight size={16} sm={20} className="ml-2" />
+            <Link to="/shopping" className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-1">
+              View All <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {products.map((product) => (
-              <Link key={product.id} to="/shopping" className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group block">
-                <div className="relative overflow-hidden">
-                  <img src={product.imageUrl} alt={product.name} className="w-full h-40 sm:h-48 md:h-56 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <Link key={product.id} to="/shopping" className="bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-lg transition-all duration-300 overflow-hidden group block transform hover:-translate-y-1">
+                <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  {product.offerPercentage > 0 && (
+                    <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
+                      {product.offerPercentage}% OFF
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
-                <div className="p-4 sm:p-6">
-                  <h3 className="font-bold text-gray-800 mb-2 sm:mb-3 text-base sm:text-lg line-clamp-2">{product.name}</h3>
-                  <div className="flex items-center mb-2 sm:mb-3">
-                    <Star size={14} sm={18} className="text-yellow-500 fill-current" />
-                    <span className="ml-2 text-xs sm:text-sm font-medium text-gray-600">{product.rating} ({product.reviewCount} reviews)</span>
+                <div className="p-3">
+                  <h3 className="font-medium text-gray-900 mb-1 text-sm line-clamp-2 group-hover:text-purple-600 transition-colors">{product.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-gray-900">{formatPrice(product.price)}</p>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <p className="text-xs text-gray-400 line-through">{formatPrice(product.originalPrice)}</p>
+                    )}
                   </div>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formatPrice(product.price)}</p>
                 </div>
               </Link>
             ))}
@@ -118,31 +174,46 @@ export default function HomePage() {
       </section>
 
       {/* Featured Ads */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50">
+      <section className="py-8 sm:py-12 md:py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Featured Ads</h2>
-              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Find what you're looking for</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-orange-500 to-red-500 p-2 rounded-lg">
+                <Briefcase className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Featured Ads</h2>
+                <p className="text-gray-500 mt-1 text-sm">Find what you're looking for</p>
+              </div>
             </div>
-            <Link to="/advertising" className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-orange-700 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base">
-              View All <ArrowRight size={16} sm={20} className="ml-2" />
+            <Link to="/advertising" className="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center gap-1">
+              View All <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {ads.map((ad) => (
-              <Link key={ad.id} to="/advertising" className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group block">
-                <div className="relative overflow-hidden">
-                  <img src={ad.imageUrl} alt={ad.title} className="w-full h-40 sm:h-48 md:h-56 object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <Link key={ad.id} to="/advertising" className="bg-white border border-gray-200 rounded-xl hover:border-orange-300 hover:shadow-lg transition-all duration-300 overflow-hidden group block transform hover:-translate-y-1">
+                <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                  <img src={ad.imageUrl} alt={ad.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  {ad.isFeatured && (
+                    <div className="absolute top-2 left-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                      <Star size={10} className="fill-current" /> Featured
+                    </div>
+                  )}
+                  {ad.isUrgent && (
+                    <div className="absolute top-2 right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
+                      Urgent
+                    </div>
+                  )}
                 </div>
-                <div className="p-4 sm:p-6">
-                  <h3 className="font-bold text-gray-800 mb-2 sm:mb-3 text-base sm:text-lg line-clamp-2">{ad.title}</h3>
-                  <div className="flex items-center mb-2 sm:mb-3">
-                    <MapPin size={14} sm={18} className="text-orange-500" />
-                    <span className="ml-2 text-xs sm:text-sm font-medium text-gray-600">{ad.location}</span>
+                <div className="p-3">
+                  <h3 className="font-medium text-gray-900 mb-1 text-sm line-clamp-2 group-hover:text-orange-600 transition-colors">{ad.title}</h3>
+                  <div className="flex items-center mb-1">
+                    <MapPin size={12} className="text-gray-400" />
+                    <span className="ml-1 text-xs text-gray-500">{ad.location}</span>
                   </div>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">{formatPrice(ad.price)}</p>
+                  <p className="text-sm font-bold text-gray-900">{formatPrice(ad.price)}</p>
                 </div>
               </Link>
             ))}
@@ -151,67 +222,83 @@ export default function HomePage() {
       </section>
 
       {/* Featured Jobs */}
-      <section className="py-12 sm:py-16 md:py-20">
+      <section className="py-8 sm:py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Featured Jobs</h2>
-              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Discover your next career opportunity</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-green-500 to-teal-500 p-2 rounded-lg">
+                <Briefcase className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Featured Jobs</h2>
+                <p className="text-gray-500 mt-1 text-sm">Discover your next career opportunity</p>
+              </div>
             </div>
-            <Link to="/recruitment" className="bg-gradient-to-r from-green-600 to-teal-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-green-700 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base">
-              View All <ArrowRight size={16} sm={20} className="ml-2" />
+            <Link to="/recruitment" className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-1">
+              View All <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {jobs.map((job) => (
-              <Link key={job.id} to="/recruitment" className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 p-4 sm:p-6 group block">
-                <div className="flex items-center mb-3 sm:mb-4">
-                  <Briefcase size={20} sm={24} className="text-blue-600" />
-                  <h3 className="font-semibold text-gray-800 ml-2 text-sm sm:text-base">{job.title}</h3>
+              <Link key={job.id} to="/recruitment" className="bg-white border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 overflow-hidden group block transform hover:-translate-y-1 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                    {job.company.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 text-sm line-clamp-1 group-hover:text-green-600 transition-colors">{job.title}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-1">{job.company}</p>
+                  </div>
                 </div>
-                <p className="text-gray-600 mb-2 text-sm sm:text-base">{job.company}</p>
-                <div className="flex items-center mb-2">
-                  <MapPin size={14} sm={16} className="text-gray-500" />
-                  <span className="ml-1 text-xs sm:text-sm text-gray-600">{job.location}</span>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{job.type}</span>
+                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{job.location}</span>
                 </div>
-                <p className="text-base sm:text-lg font-bold text-green-600">{job.salary}</p>
+                <p className="text-sm font-bold text-gray-900">{job.salary}</p>
               </Link>
             ))}
-          </div>
+            </div>
         </div>
       </section>
 
       {/* Transport Options */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <section className="py-8 sm:py-12 md:py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Transport Options</h2>
-              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Travel with comfort and style</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-2 rounded-lg">
+                <Calendar className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Transport Options</h2>
+                <p className="text-gray-500 mt-1 text-sm">Travel with comfort and style</p>
+              </div>
             </div>
-            <Link to="/booking" className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base">
-              View All <ArrowRight size={16} sm={20} className="ml-2" />
+            <Link to="/booking" className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1">
+              View All <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {transports.map((transport) => (
-              <Link key={transport.id} to="/booking" className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 p-4 sm:p-6 group block">
-                <div className="flex items-center mb-3 sm:mb-4">
-                  <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-2 sm:p-3 rounded-lg sm:rounded-xl">
-                    <Calendar size={20} sm={28} className="text-white" />
+              <Link key={transport.id} to="/booking" className="bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden group block transform hover:-translate-y-1 p-4">
+                <div className="flex items-center mb-3">
+                  <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-2 rounded-lg">
+                    <Calendar size={18} className="text-white" />
                   </div>
-                  <div className="ml-3 sm:ml-4">
-                    <h3 className="font-bold text-gray-800 text-sm sm:text-base">{transport.name}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600">{transport.type}</p>
+                  <div className="ml-3">
+                    <h3 className="font-medium text-gray-900 text-sm group-hover:text-blue-600 transition-colors">{transport.name}</h3>
+                    <p className="text-xs text-gray-500">{transport.type}</p>
                   </div>
                 </div>
-                <div className="flex justify-between items-center mb-2 sm:mb-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg sm:rounded-xl p-2 sm:p-3">
-                  <span className="text-gray-700 font-medium text-xs sm:text-sm">{transport.source}</span>
-                  <ArrowRight size={14} sm={18} className="text-indigo-600" />
-                  <span className="text-gray-700 font-medium text-xs sm:text-sm">{transport.destination}</span>
+                <div className="flex justify-between items-center mb-2 bg-blue-50 rounded-lg p-2">
+                  <span className="text-gray-700 text-xs">{transport.source}</span>
+                  <ArrowRight size={12} className="text-blue-400" />
+                  <span className="text-gray-700 text-xs">{transport.destination}</span>
                 </div>
-                <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{formatPrice(transport.price)}</p>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">{transport.duration}</p>
+                <p className="text-sm font-bold text-gray-900">{formatPrice(transport.price)}</p>
+                <p className="text-xs text-gray-500 mt-1">{transport.duration}</p>
               </Link>
             ))}
           </div>
@@ -219,33 +306,36 @@ export default function HomePage() {
       </section>
 
       {/* Travel Packages */}
-      <section className="py-12 sm:py-16 md:py-20">
+      <section className="py-8 sm:py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">Travel Packages</h2>
-              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Explore amazing destinations</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-pink-500 to-rose-500 p-2 rounded-lg">
+                <Plane className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Travel Packages</h2>
+                <p className="text-gray-500 mt-1 text-sm">Explore amazing destinations</p>
+              </div>
             </div>
-            <Link to="/booking" className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base">
-              View All <ArrowRight size={16} sm={20} className="ml-2" />
+            <Link to="/booking" className="text-pink-600 hover:text-pink-700 font-medium text-sm flex items-center gap-1">
+              View All <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {packages.map((pkg) => (
-              <Link key={pkg.id} to="/booking" className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group block">
-                <div className="relative overflow-hidden">
-                  <img src={pkg.imageUrl} alt={pkg.name} className="w-full h-40 sm:h-48 md:h-56 object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <Link key={pkg.id} to="/booking" className="bg-white border border-gray-200 rounded-xl hover:border-pink-300 hover:shadow-lg transition-all duration-300 overflow-hidden group block transform hover:-translate-y-1">
+                <div className="relative aspect-video bg-gray-100 overflow-hidden">
+                  <img src={pkg.imageUrl} alt={pkg.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 </div>
-                <div className="p-4 sm:p-6">
-                  <div className="flex items-center mb-2 sm:mb-3">
-                    <div className="bg-gradient-to-br from-cyan-500 to-blue-500 p-1.5 sm:p-2 rounded-lg">
-                      <Plane size={16} sm={20} className="text-white" />
-                    </div>
-                    <h3 className="font-bold text-gray-800 ml-2 sm:ml-3 text-sm sm:text-base">{pkg.name}</h3>
+                <div className="p-3">
+                  <div className="flex items-center mb-1">
+                    <Plane size={14} className="text-pink-500" />
+                    <h3 className="font-medium text-gray-900 ml-2 text-sm line-clamp-1 group-hover:text-pink-600 transition-colors">{pkg.name}</h3>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">{pkg.duration}</p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">{formatPrice(pkg.price)}</p>
+                  <p className="text-xs text-gray-500 mb-1">{pkg.duration}</p>
+                  <p className="text-sm font-bold text-gray-900">{formatPrice(pkg.price)}</p>
                 </div>
               </Link>
             ))}
@@ -254,37 +344,35 @@ export default function HomePage() {
       </section>
 
       {/* Movies */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-rose-50 via-pink-50 to-red-50">
+      <section className="py-8 sm:py-12 md:py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">Now Showing</h2>
-              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Catch the latest blockbusters</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-red-500 to-orange-500 p-2 rounded-lg">
+                <Star className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Now Showing</h2>
+                <p className="text-gray-500 mt-1 text-sm">Catch the latest blockbusters</p>
+              </div>
             </div>
-            <Link to="/booking" className="bg-gradient-to-r from-rose-600 to-pink-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base">
-              View All <ArrowRight size={16} sm={20} className="ml-2" />
+            <Link to="/booking" className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center gap-1">
+              View All <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {movies.map((movie) => (
-              <Link key={movie.id} to="/booking" className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group block">
-                <div className="relative overflow-hidden">
-                  <img src={movie.imageUrl} alt={movie.title} className="w-full h-48 sm:h-56 md:h-72 object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                    <div className="flex items-center">
-                      <Star size={14} sm={18} className="text-yellow-400 fill-current" />
-                      <span className="ml-2 text-white font-semibold text-sm sm:text-base">{movie.rating}</span>
-                    </div>
+              <Link key={movie.id} to="/booking" className="bg-white border border-gray-200 rounded-xl hover:border-red-300 hover:shadow-lg transition-all duration-300 overflow-hidden group block transform hover:-translate-y-1">
+                <div className="relative aspect-[2/3] bg-gray-100 overflow-hidden">
+                  <img src={movie.imageUrl} alt={movie.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                    <Star size={10} className="fill-current" /> {movie.rating}
                   </div>
                 </div>
-                <div className="p-4 sm:p-6">
-                  <h3 className="font-bold text-gray-800 mb-1 sm:mb-2 text-base sm:text-lg line-clamp-2">{movie.title}</h3>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">{movie.genre} • {movie.language}</p>
-                  <div className="flex items-center">
-                    <Star size={14} sm={16} className="text-yellow-500 fill-current" />
-                    <span className="ml-2 text-xs sm:text-sm font-medium text-gray-600">{movie.rating}</span>
-                  </div>
+                <div className="p-3">
+                  <h3 className="font-medium text-gray-900 mb-1 text-sm line-clamp-2 group-hover:text-red-600 transition-colors">{movie.title}</h3>
+                  <p className="text-xs text-gray-500 mb-1">{movie.genre} • {movie.language}</p>
                 </div>
               </Link>
             ))}

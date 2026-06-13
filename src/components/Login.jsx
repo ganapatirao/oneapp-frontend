@@ -98,12 +98,12 @@ export default function Login({ onLogin }) {
             Forgot password?
           </Link>
         </div>
-{/* 
+
         <div className="mt-8 p-4 bg-gray-50 rounded-lg">
           <p className="text-sm text-gray-600 mb-2 font-medium">Test Credentials:</p>
           <p className="text-xs text-gray-500">Admin: admin@businessplatform.com / admin123</p>
           <p className="text-xs text-gray-500">User: john@example.com / password123</p>
-        </div> */}
+        </div>
       </div>
     </div>
   );

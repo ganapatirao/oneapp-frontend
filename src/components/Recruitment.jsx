@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Briefcase, DollarSign, Building2, Clock, Bookmark, Share2, X, Filter, ChevronDown, Star, Users, Calendar, ArrowRight, Send, Plus } from 'lucide-react';
+import { Search, MapPin, Briefcase, DollarSign, Building2, Clock, Bookmark, Share2, X, Filter, ChevronDown, ChevronUp, Star, Users, Calendar, ArrowRight, Send, Plus, Sparkles, SlidersHorizontal, Zap } from 'lucide-react';
 import { recruitmentApi } from '../services/api';
 
 export default function Recruitment({ userRole }) {
@@ -12,6 +12,8 @@ export default function Recruitment({ userRole }) {
   const [selectedExperience, setSelectedExperience] = useState('All');
   const [selectedSalary, setSelectedSalary] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedSection, setExpandedSection] = useState(null);
+  const [salaryRange, setSalaryRange] = useState({ min: '', max: '' });
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [showPostJob, setShowPostJob] = useState(false);
   const [showJobDetail, setShowJobDetail] = useState(false);
@@ -419,16 +421,16 @@ export default function Recruitment({ userRole }) {
 
           {/* Jobs List */}
           <div className="flex-1">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
                 {filteredJobs.length} Jobs Found
               </h2>
               {(userRole === 'Recruiter' || userRole === 'Admin') && (
                 <button
                   onClick={() => setShowPostJob(true)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center shadow-lg hover:shadow-xl"
+                  className="bg-gradient-to-r from-green-500 to-teal-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:from-green-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl flex items-center text-sm"
                 >
-                  <Plus size={20} className="mr-2" />
+                  <Plus size={16} className="mr-2" />
                   Post a Job
                 </button>
               )}
@@ -438,23 +440,22 @@ export default function Recruitment({ userRole }) {
               {filteredJobs.map((job) => (
                 <div
                   key={job.id}
-                  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 hover:border-blue-200 cursor-pointer group"
+                  className="bg-white border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 p-5 cursor-pointer transform hover:-translate-y-1 group"
                   onClick={() => handleViewJob(job)}
                 >
-                  <div className="flex flex-col md:flex-row gap-4">
-                    {/* Company Logo Placeholder */}
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0">
+                  <div className="flex gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-md">
                       {job.company.charAt(0)}
                     </div>
 
                     <div className="flex-1">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                      <div className="flex justify-between items-start gap-2">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+                          <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">
                             {job.title}
                           </h3>
-                          <p className="text-gray-600 flex items-center gap-2 mt-1">
-                            <Building2 size={16} />
+                          <p className="text-gray-500 text-xs flex items-center gap-1 mt-0.5">
+                            <Building2 size={12} />
                             {job.company}
                           </p>
                         </div>
@@ -463,53 +464,49 @@ export default function Recruitment({ userRole }) {
                             e.stopPropagation();
                             handleSaveJob(job.id);
                           }}
-                          className={`p-2 rounded-lg transition-colors ${savedJobs.includes(job.id) ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                          className={`p-1.5 rounded-lg transition-colors ${savedJobs.includes(job.id) ? 'bg-gray-100 text-gray-900' : 'bg-gray-50 text-gray-400'}`}
                         >
-                          <Bookmark size={20} fill={savedJobs.includes(job.id) ? 'currentColor' : 'none'} />
+                          <Bookmark size={16} fill={savedJobs.includes(job.id) ? 'currentColor' : 'none'} />
                         </button>
                       </div>
 
-                      <div className="flex flex-wrap gap-3 mt-4">
-                        <span className="flex items-center gap-1 text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                          <MapPin size={14} />
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <span className="flex items-center gap-1 text-xs text-gray-700 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
+                          <MapPin size={12} className="text-green-600" />
                           {job.location}
                         </span>
-                        <span className="flex items-center gap-1 text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                          <Briefcase size={14} />
+                        <span className="flex items-center gap-1 text-xs text-gray-700 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200">
+                          <Briefcase size={12} className="text-teal-600" />
                           {job.type}
                         </span>
-                        <span className={`flex items-center gap-1 text-sm font-semibold px-3 py-1 rounded-full ${getSalaryColor(job.salary)}`}>
-                          <DollarSign size={14} />
+                        <span className="flex items-center gap-1 text-xs font-semibold text-gray-900 bg-gradient-to-r from-green-50 to-teal-50 px-3 py-1.5 rounded-full border border-green-200">
+                          <DollarSign size={12} className="text-green-600" />
                           {job.salary}
-                        </span>
-                        <span className="flex items-center gap-1 text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
-                          <Clock size={14} />
-                          {getTimeAgo(job.createdAt)}
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {job.skills.slice(0, 4).map((skill, index) => (
-                          <span key={index} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-medium">
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {job.skills.slice(0, 3).map((skill, index) => (
+                          <span key={index} className="text-xs text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-1 rounded-full border border-gray-200">
                             {skill}
                           </span>
                         ))}
-                        {job.skills.length > 4 && (
-                          <span className="text-xs text-gray-500 px-2 py-1">+{job.skills.length - 4} more</span>
+                        {job.skills.length > 3 && (
+                          <span className="text-xs text-gray-400 px-2 py-1">+{job.skills.length - 3} more</span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleApply(job);
                       }}
-                      className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-gray-900 text-white py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-1 text-sm"
                     >
-                      <Send size={18} />
+                      <Send size={14} />
                       Apply Now
                     </button>
                     <button
@@ -517,7 +514,7 @@ export default function Recruitment({ userRole }) {
                         e.stopPropagation();
                         handleViewJob(job);
                       }}
-                      className="px-6 py-3 border border-blue-600 text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-1 text-sm"
                     >
                       View Details
                       <ArrowRight size={18} />
